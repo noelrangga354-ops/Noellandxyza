@@ -1,5 +1,5 @@
 -- =================================================================================
--- Hyunjin GUI - WindUI Edition (Violence District) - Integrated & Enhanced Version
+-- Hyunjin GUI - WindUI Edition (Violence District) - Optimized & Enhanced Version
 -- =================================================================================
 
 -- Load Fiskha's Backend Modules for Auto Carry, Auto Hook, Emotes, & Animations
@@ -58,6 +58,20 @@ local function GetGameValue(obj, name)
     return nil
 end
 
+local function applyCorner(parent, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius or 8)
+    corner.Parent = parent
+end
+
+local function applyStroke(parent, color, thickness)
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = color or Color3.fromRGB(45, 45, 45)
+    stroke.Thickness = thickness or 1
+    stroke.Transparency = 0.3
+    stroke.Parent = parent
+end
+
 local function TriggerMobileAction(pathName)
     local current = PlayerGui
     for segment in string.gmatch(pathName, "[^%.]+") do
@@ -92,7 +106,43 @@ end)
 -- Load WindUI securely
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
--- Define Custom Dark Red Theme matching your design style
+-- Define Custom Themes
+WindUI:AddTheme({
+    Name = "DarkDark",
+    Accent = "#333333",
+    Outline = "#1f1f1f",
+    Text = "#f5f5f5",
+    Placeholder = "#888888",
+    Background = "#0b0b0b",
+    Window = "#0f0f0f",
+    Button = "#141414",
+    Icon = "#888888",
+})
+
+WindUI:AddTheme({
+    Name = "DarkWhite",
+    Accent = "#e0e0e0",
+    Outline = "#333333",
+    Text = "#ffffff",
+    Placeholder = "#aaaaaa",
+    Background = "#111111",
+    Window = "#161616",
+    Button = "#1e1e1e",
+    Icon = "#aaaaaa",
+})
+
+WindUI:AddTheme({
+    Name = "DarkPurple",
+    Accent = "#9b59b6",
+    Outline = "#2c1b33",
+    Text = "#f5f5f5",
+    Placeholder = "#9a8ca0",
+    Background = "#100c14",
+    Window = "#150f1b",
+    Button = "#1c1226",
+    Icon = "#9a8ca0",
+})
+
 WindUI:AddTheme({
     Name = "DarkRedModern",
     Accent = "#e12d4b",
@@ -105,23 +155,52 @@ WindUI:AddTheme({
     Icon = "#a08c91",
 })
 
-WindUI:SetTheme("DarkRedModern")
+WindUI:SetTheme("DarkDark")
 
--- Create Main Window with requested Icon = "fan"
+-- Create Main Window
 local Window = WindUI:CreateWindow({
     Title = "Hyunjin GUI",
-    SubTitle = "Violence District",
-    TabWidth = 150,
-    Size = UDim2.fromOffset(560, 440),
-    Acrylic = false,
-    Theme = "DarkRedModern",
-    Transparent = false,
-    Icon = "code-xml",
+    Author = "VIOLENCE DISTRICT",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(520, 480),
+    Acrylic = true,
+    Theme = "DarkDark",
+    Transparent = true,
+    Resizable = true,
+    MaximizeButton = true,
+    MinimizeButton = true,
+    Icon = "chevron-first",
+    SideBarWidth = 180,
+    HasOutline = true,
+    HideSearchBar = false,
 })
 
--- ==========================================
+-- TOPBAR BUTTON
+pcall(function()
+    Window.Topbar:Button({
+        Name = "HealRemoteButton",
+        Icon = "briefcase-medical",
+        LayoutOrder = 1,
+        IconThemed = true,
+        Callback = function()
+            pcall(function()
+                local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+                local healingFolder = remotes and remotes:FindFirstChild("Healing")
+                local healEvent = healingFolder and healingFolder:FindFirstChild("HealEvent")
+                local char = Player.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if healEvent and hrp then
+                    healEvent:FireServer(hrp, true)
+                    WindUI:Notify({ Title = "Heal Remote", Content = "Berhasil menembak remote heal 1x!", Duration = 1.5 })
+                else
+                    WindUI:Notify({ Title = "Heal Remote", Content = "Remote heal tidak ditemukan!", Duration = 1.5 })
+                end
+            end)
+        end
+    })
+end)
+
 -- TABS DEFINITION
--- ==========================================
 local HomeTab = Window:Tab({ Title = "Home", Icon = "house" })
 local SurvivorTab = Window:Tab({ Title = "Survivor", Icon = "user" })
 local KillerTab = Window:Tab({ Title = "Killer", Icon = "sword" })
@@ -131,9 +210,7 @@ local LocationTab = Window:Tab({ Title = "Location", Icon = "map-pin" })
 local CheckTab = Window:Tab({ Title = "Misc", Icon = "settings" })
 local HvHTab = Window:Tab({ Title = "About", Icon = "info" })
 
--- ==========================================
--- PRELOAD SURVIVOR MODULES & REMOTES
--- ==========================================
+-- PRELOAD SURVIVOR MODULES
 task.spawn(function()
     pcall(function()
         local modulesFolder = ReplicatedStorage:FindFirstChild("Modules")
@@ -150,11 +227,7 @@ task.spawn(function()
     end)
 end)
 
--- ==========================================
 -- INTEGRATED BACKEND SYSTEMS
--- ==========================================
-
--- Movement Variables & Functions
 local Movement = {
     JumpPowerEnabled = false,
     JumpPowerValue = 100,
@@ -246,7 +319,7 @@ local function vzImqwp(vnqDZuQ0XQ)
                 ["Left Leg"] = color18.LeftLegColor3, ["Right Leg"] = color18.RightLegColor3,
                 UpperTorso = color18.TorsoColor3, LowerTorso = color18.TorsoColor3,
                 LeftHand = color18.LeftArmColor3, RightHand = color18.RightArmColor3,
-                LeftLowerArm = color18.LeftArmColor3, RightLowerArm = color18.RightArmColor3,
+                LeftLowerArm = color18.LeftArmColor3, RightLowerArm = color18.RightLowerArmColor3,
                 LeftUpperArm = color18.LeftArmColor3, RightUpperArm = color18.RightUpperArmColor3,
                 LeftFoot = color18.LeftLegColor3, RightFoot = color18.RightLegColor3,
                 LeftLowerLeg = color18.LeftLegColor3, RightLowerLeg = color18.RightLowerLegColor3,
@@ -305,9 +378,7 @@ local function vzImqwp(vnqDZuQ0XQ)
     end)
 end
 
--- ==========================================
 -- PERSISTENT CACHE VARIABLES (HOME TAB)
--- ==========================================
 local cachedLevel = "1"
 local cachedGears = "0"
 local cachedScrews = "0"
@@ -315,7 +386,6 @@ local cachedKC = "0"
 local currentMapStr = "Menunggu..."
 local currentKillerStr = "Mencari..."
 local currentGenStr = "0 / 7"
-local cachedPlayerStatsText = "Memuat data player..."
 
 local MapCoords = {
     ["scp"] = {{-53.2, 284.9, -551.7}},
@@ -331,28 +401,362 @@ local MapCoords = {
 local currentMapKey = "club"
 
 -- ==========================================
--- 1. HOME TAB
+-- 1. HOME TAB (PLAYER CARDS & MATCH STATUS)
 -- ==========================================
-local AvatarThumbnail = "rbxthumb://type=AvatarHeadShot&id=" .. Player.UserId .. "&w=150&h=150"
-
-local ProfileParagraph = HomeTab:Paragraph({
-    Title = "[" .. cachedLevel .. "] " .. Player.Name,
-    Desc = "🌟 : " .. cachedGears .. " | ⚙️ : " .. cachedScrews .. " | 💀 : " .. cachedKC .. "",
-    Image = AvatarThumbnail,
-    ImageSize = 48,
+local PlayersCardsParagraph = HomeTab:Paragraph({
+    Title = "Players In Game",
+    Desc = "",
+    Image = "users",
+    ImageSize = 20,
 })
+
+local PlayerCardsContainer = Instance.new("Frame")
+PlayerCardsContainer.Name = "PlayerCardsContainer"
+PlayerCardsContainer.Size = UDim2.new(1, 0, 0, 135)
+PlayerCardsContainer.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+PlayerCardsContainer.BorderSizePixel = 0
+applyCorner(PlayerCardsContainer, 8)
+applyStroke(PlayerCardsContainer, Color3.fromRGB(45, 45, 45), 1)
+
+local HorizontalScrollFrame = Instance.new("ScrollingFrame")
+HorizontalScrollFrame.Name = "PlayerCardsScrollFrame"
+HorizontalScrollFrame.Size = UDim2.new(1, -8, 1, -8)
+HorizontalScrollFrame.Position = UDim2.new(0, 4, 0, 4)
+HorizontalScrollFrame.BackgroundTransparency = 1
+HorizontalScrollFrame.BorderSizePixel = 0
+HorizontalScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+HorizontalScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.X
+HorizontalScrollFrame.ScrollingDirection = Enum.ScrollingDirection.X
+HorizontalScrollFrame.ScrollBarThickness = 3
+HorizontalScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(225, 45, 75)
+HorizontalScrollFrame.HorizontalScrollBarInset = Enum.ScrollBarInset.None
+HorizontalScrollFrame.Parent = PlayerCardsContainer
+
+local CardsListLayout = Instance.new("UIListLayout")
+CardsListLayout.FillDirection = Enum.FillDirection.Horizontal
+CardsListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+CardsListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+CardsListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+CardsListLayout.Padding = UDim.new(0, 8)
+CardsListLayout.Parent = HorizontalScrollFrame
+
+local CardsPadding = Instance.new("UIPadding")
+CardsPadding.PaddingLeft = UDim.new(0, 4)
+CardsPadding.PaddingRight = UDim.new(0, 4)
+CardsPadding.PaddingTop = UDim.new(0, 2)
+CardsPadding.PaddingBottom = UDim.new(0, 2)
+CardsPadding.Parent = HorizontalScrollFrame
+
+task.spawn(function()
+    task.wait(0.3)
+    pcall(function()
+        local targetParent = nil
+        for _, gui in ipairs({CoreGui, PlayerGui}) do
+            for _, desc in ipairs(gui:GetDescendants()) do
+                if desc:IsA("TextLabel") and desc.Text == "Players In Game" then
+                    targetParent = desc.Parent and desc.Parent.Parent and desc.Parent.Parent.Parent
+                    break
+                end
+            end
+            if targetParent then break end
+        end
+        if targetParent then
+            PlayerCardsContainer.Parent = targetParent
+        end
+    end)
+end)
+
+local function UpdatePlayerCards(playerDataList)
+    local activeKeys = {}
+    for i, data in ipairs(playerDataList) do
+        local cardKey = data.Name
+        activeKeys[cardKey] = true
+
+        local card = HorizontalScrollFrame:FindFirstChild("Card_" .. cardKey)
+        local userId = data.Player and data.Player.UserId or 1
+        local thumb = "rbxthumb://type=AvatarHeadShot&id=" .. userId .. "&w=150&h=150"
+
+        if not card then
+            card = Instance.new("Frame")
+            card.Name = "Card_" .. cardKey
+            card.Size = UDim2.new(0, 110, 0, 124)
+            card.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+            card.Parent = HorizontalScrollFrame
+
+            applyCorner(card, 8)
+            applyStroke(card, Color3.fromRGB(45, 45, 45), 1)
+
+            local progressContainer = Instance.new("Frame")
+            progressContainer.Name = "ProgressContainer"
+            progressContainer.Size = UDim2.new(0, 44, 0, 44)
+            progressContainer.Position = UDim2.new(0.5, -22, 0, 2)
+            progressContainer.BackgroundTransparency = 1
+            progressContainer.Visible = false
+            progressContainer.Parent = card
+
+            local aspect = Instance.new("UIAspectRatioConstraint")
+            aspect.AspectRatio = 1
+            aspect.Parent = progressContainer
+
+            local frame1 = Instance.new("Frame")
+            frame1.Name = "Frame1"
+            frame1.Size = UDim2.new(0.5, 0, 1, 0)
+            frame1.Position = UDim2.new(0, 0, 0, 0)
+            frame1.BackgroundTransparency = 1
+            frame1.ClipsDescendants = true
+            frame1.Parent = progressContainer
+
+            local img1 = Instance.new("ImageLabel")
+            img1.Size = UDim2.new(2, 0, 1, 0)
+            img1.Position = UDim2.new(0, 0, 0, 0)
+            img1.BackgroundTransparency = 1
+            img1.Image = "rbxassetid://6071575925"
+            img1.ImageColor3 = Color3.fromRGB(225, 45, 75)
+            img1.Parent = frame1
+
+            local grad1 = Instance.new("UIGradient")
+            grad1.Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0),
+                NumberSequenceKeypoint.new(0.5, 0),
+                NumberSequenceKeypoint.new(0.51, 1),
+                NumberSequenceKeypoint.new(1, 1)
+            })
+            grad1.Rotation = 180
+            grad1.Parent = img1
+
+            local frame2 = Instance.new("Frame")
+            frame2.Name = "Frame2"
+            frame2.Size = UDim2.new(0.5, 0, 1, 0)
+            frame2.Position = UDim2.new(0.5, 0, 0, 0)
+            frame2.BackgroundTransparency = 1
+            frame2.ClipsDescendants = true
+            frame2.Parent = progressContainer
+
+            local img2 = Instance.new("ImageLabel")
+            img2.Size = UDim2.new(2, 0, 1, 0)
+            img2.Position = UDim2.new(-1, 0, 0, 0)
+            img2.BackgroundTransparency = 1
+            img2.Image = "rbxassetid://6071575925"
+            img2.ImageColor3 = Color3.fromRGB(225, 45, 75)
+            img2.Parent = frame2
+
+            local grad2 = Instance.new("UIGradient")
+            grad2.Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0),
+                NumberSequenceKeypoint.new(0.5, 0),
+                NumberSequenceKeypoint.new(0.51, 1),
+                NumberSequenceKeypoint.new(1, 1)
+            })
+            grad2.Rotation = 180
+            grad2.Parent = img2
+
+            local img = Instance.new("ImageLabel")
+            img.Name = "Avatar"
+            img.Size = UDim2.new(0, 36, 0, 36)
+            img.Position = UDim2.new(0.5, -18, 0, 6)
+            img.BackgroundTransparency = 1
+            img.Image = thumb
+            img.Parent = card
+            applyCorner(img, 18)
+            applyStroke(img, Color3.fromRGB(225, 45, 75), 1)
+
+            local antiHealLbl = Instance.new("TextLabel")
+            antiHealLbl.Name = "Antiheal"
+            antiHealLbl.Size = UDim2.new(0, 14, 0, 14)
+            antiHealLbl.Position = UDim2.new(0, 4, 0, 4)
+            antiHealLbl.BackgroundTransparency = 1
+            antiHealLbl.Text = "🛡️"
+            antiHealLbl.TextSize = 10
+            antiHealLbl.Visible = false
+            antiHealLbl.Parent = card
+
+            local hookLbl = Instance.new("TextLabel")
+            hookLbl.Name = "Counter"
+            hookLbl.Size = UDim2.new(0, 24, 0, 14)
+            hookLbl.Position = UDim2.new(1, -28, 0, 4)
+            hookLbl.BackgroundTransparency = 1
+            hookLbl.Text = ""
+            hookLbl.TextColor3 = Color3.fromRGB(255, 60, 80)
+            hookLbl.TextSize = 10
+            hookLbl.Font = Enum.Font.GothamBold
+            hookLbl.Parent = card
+
+            local nameLbl = Instance.new("TextLabel")
+            nameLbl.Name = "Name"
+            nameLbl.Size = UDim2.new(1, -8, 0, 14)
+            nameLbl.Position = UDim2.new(0, 4, 0, 44)
+            nameLbl.BackgroundTransparency = 1
+            nameLbl.Text = data.Name
+            nameLbl.TextColor3 = Color3.fromRGB(245, 245, 245)
+            nameLbl.TextSize = 10
+            nameLbl.Font = Enum.Font.GothamBold
+            nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
+            nameLbl.TextXAlignment = Enum.TextXAlignment.Center
+            nameLbl.Parent = card
+
+            local lvlLbl = Instance.new("TextLabel")
+            lvlLbl.Name = "Level"
+            lvlLbl.Size = UDim2.new(1, -8, 0, 12)
+            lvlLbl.Position = UDim2.new(0, 4, 0, 59)
+            lvlLbl.BackgroundTransparency = 1
+            lvlLbl.Text = "Lvl: " .. data.Level
+            lvlLbl.TextColor3 = Color3.fromRGB(180, 180, 180)
+            lvlLbl.TextSize = 9
+            lvlLbl.Font = Enum.Font.Gotham
+            lvlLbl.TextXAlignment = Enum.TextXAlignment.Center
+            lvlLbl.Parent = card
+
+            local kcLbl = Instance.new("TextLabel")
+            kcLbl.Name = "KC"
+            kcLbl.Size = UDim2.new(1, -8, 0, 12)
+            kcLbl.Position = UDim2.new(0, 4, 0, 73)
+            kcLbl.BackgroundTransparency = 1
+            kcLbl.Text = "💀 " .. data.KC .. "%"
+            kcLbl.TextColor3 = Color3.fromRGB(225, 45, 75)
+            kcLbl.TextSize = 9
+            kcLbl.Font = Enum.Font.GothamBold
+            kcLbl.TextXAlignment = Enum.TextXAlignment.Center
+            kcLbl.Parent = card
+
+            local roleBadge = Instance.new("Frame")
+            roleBadge.Name = "RoleBadge"
+            roleBadge.Size = UDim2.new(1, -12, 0, 16)
+            roleBadge.Position = UDim2.new(0, 6, 0, 92)
+            if data.Role == "KILLER" then
+                roleBadge.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+            elseif data.Role == "SPECTATOR" then
+                roleBadge.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
+            else
+                roleBadge.BackgroundColor3 = Color3.fromRGB(40, 120, 220)
+            end
+            roleBadge.Parent = card
+            applyCorner(roleBadge, 4)
+
+            local tagLbl = Instance.new("TextLabel")
+            tagLbl.Name = "Tag"
+            tagLbl.Size = UDim2.new(1, 0, 1, 0)
+            tagLbl.BackgroundTransparency = 1
+            tagLbl.Text = data.Role
+            tagLbl.TextColor3 = Color3.fromRGB(230, 230, 230)
+            tagLbl.TextSize = 8
+            tagLbl.Font = Enum.Font.GothamBold
+            tagLbl.TextXAlignment = Enum.TextXAlignment.Center
+            tagLbl.Parent = roleBadge
+
+            local progressBarBg = Instance.new("Frame")
+            progressBarBg.Name = "ProgressBarBg"
+            progressBarBg.Size = UDim2.new(1, -12, 0, 4)
+            progressBarBg.Position = UDim2.new(0, 6, 1, -8)
+            progressBarBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            progressBarBg.BorderSizePixel = 0
+            progressBarBg.Visible = false
+            progressBarBg.Parent = card
+            applyCorner(progressBarBg, 2)
+
+            local progressBarFill = Instance.new("Frame")
+            progressBarFill.Name = "Fill"
+            progressBarFill.Size = UDim2.new(0, 0, 1, 0)
+            progressBarFill.BackgroundColor3 = Color3.fromRGB(74, 255, 181)
+            progressBarFill.BorderSizePixel = 0
+            progressBarFill.Parent = progressBarBg
+            applyCorner(progressBarFill, 2)
+        else
+            local lvlLbl = card:FindFirstChild("Level")
+            if lvlLbl then lvlLbl.Text = "Lvl: " .. data.Level end
+
+            local kcLbl = card:FindFirstChild("KC")
+            if kcLbl then kcLbl.Text = "💀 " .. data.KC .. "%" end
+
+            local roleBadge = card:FindFirstChild("RoleBadge")
+            if roleBadge then
+                if data.Role == "KILLER" then
+                    roleBadge.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+                elseif data.Role == "SPECTATOR" then
+                    roleBadge.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
+                else
+                    roleBadge.BackgroundColor3 = Color3.fromRGB(40, 120, 220)
+                end
+            end
+
+            local tagLbl = roleBadge and roleBadge:FindFirstChild("Tag") or card:FindFirstChild("Tag")
+            if tagLbl then
+                tagLbl.Text = data.Role
+                tagLbl.TextColor3 = Color3.fromRGB(230, 230, 230)
+            end
+            applyStroke(card, Color3.fromRGB(45, 45, 45), 1)
+        end
+
+        pcall(function()
+            local plrObj = data.Player
+            local char = plrObj and plrObj.Character
+            if char then
+                local isRepairing = char:GetAttribute("IsRepairing") or char:GetAttribute("Repairing") or false
+                local progressVal = tonumber(char:GetAttribute("RepairProgress") or char:GetAttribute("Progress") or 0) or 0
+                local isAntiHeal = char:GetAttribute("AntiHeal") or char:GetAttribute("Anti-Heal") or false
+                local hookCount = tonumber(char:GetAttribute("HookCount") or char:GetAttribute("Hooks") or char:GetAttribute("HookedCount") or 0) or 0
+
+                local progContainer = card:FindFirstChild("ProgressContainer")
+                if progContainer then
+                    if isRepairing and progressVal > 0 then
+                        progContainer.Visible = true
+                        local angle = (progressVal / 100) * 360
+                        local g1 = progContainer.Frame1.ImageLabel.UIGradient
+                        local g2 = progContainer.Frame2.ImageLabel.UIGradient
+                        if angle <= 180 then
+                            g1.Rotation = angle
+                            g2.Rotation = 0
+                        else
+                            g1.Rotation = 180
+                            g2.Rotation = angle - 180
+                        end
+                    else
+                        progContainer.Visible = false
+                    end
+                end
+
+                local progBg = card:FindFirstChild("ProgressBarBg")
+                local progFill = progBg and progBg:FindFirstChild("Fill")
+                if progBg and progFill then
+                    if isRepairing and progressVal > 0 then
+                        progBg.Visible = true
+                        progFill.Size = UDim2.new(math.clamp(progressVal / 100, 0, 1), 0, 1, 0)
+                    else
+                        progBg.Visible = false
+                    end
+                end
+
+                local antiHealLbl = card:FindFirstChild("Antiheal")
+                if antiHealLbl then
+                    antiHealLbl.Visible = (isAntiHeal == true)
+                end
+
+                local hookLbl = card:FindFirstChild("Counter")
+                if hookLbl then
+                    if hookCount == 1 then hookLbl.Text = "|"
+                    elseif hookCount == 2 then hookLbl.Text = "||"
+                    elseif hookCount >= 3 then hookLbl.Text = "|||"
+                    else hookLbl.Text = "" end
+                end
+            end
+        end)
+
+        card.LayoutOrder = i
+    end
+
+    for _, child in ipairs(HorizontalScrollFrame:GetChildren()) do
+        if child:IsA("Frame") and child.Name:sub(1, 5) == "Card_" then
+            local k = child.Name:sub(6)
+            if not activeKeys[k] then
+                child:Destroy()
+            end
+        end
+    end
+end
 
 local MatchStatusParagraph = HomeTab:Paragraph({
     Title = "Match Status | Lobby",
     Desc = "Next Map : " .. currentMapStr .. "\nNext Killer : " .. currentKillerStr .. "\nGenerators : " .. currentGenStr,
     Image = "map",
-    ImageSize = 24,
-})
-
-local AllPlayersParagraph = HomeTab:Paragraph({
-    Title = "Players In Game",
-    Desc = cachedPlayerStatsText,
-    Image = "users",
     ImageSize = 24,
 })
 
@@ -544,19 +948,6 @@ AutoGenButton.TextSize = 11
 AutoGenButton.Font = Enum.Font.GothamBold
 AutoGenButton.Parent = AutoGenGui
 
-local function applyCorner(parent, radius)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius or 8)
-    corner.Parent = parent
-end
-local function applyStroke(parent, color, thickness)
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = color or Color3.fromRGB(50, 25, 32)
-    stroke.Thickness = thickness or 1
-    stroke.Transparency = 0.3
-    stroke.Parent = parent
-end
-
 applyCorner(AutoGenButton, 6)
 applyStroke(AutoGenButton, Color3.fromRGB(50, 25, 32), 1)
 
@@ -571,13 +962,14 @@ SurvivorTab:Toggle({
     Title = "Auto Gen",
     Default = false,
     Callback = function(v)
-        _G.AutoGen = v
         AutoGenGui.Enabled = v
+        if not v then _G.AutoGen = false AutoGenButton.Text = "Auto Gen: OFF" AutoGenButton.BackgroundColor3 = Color3.fromRGB(30, 18, 22) AutoGenButton.TextColor3 = Color3.fromRGB(160, 140, 145) end
     end
 })
 
+-- OPTIMIZED: Throttle loop to 0.2s to prevent lag spike
 task.spawn(function()
-    while task.wait(0.05) do
+    while task.wait(0.2) do
         if _G.AutoGen then
             pcall(function()
                 local repairRemote = ReplicatedStorage:FindFirstChild("Remotes") 
@@ -612,9 +1004,13 @@ pcall(function()
         local hitEv = ksFolder:FindFirstChild("KingScourgeHit")
         if startEv and hitEv then
             startEv.OnClientEvent:Connect(function()
-                if _G.SkillCheck.Enabled and (_G.SkillCheck.Mode == "Neutral" or _G.SkillCheck.Mode == "Instant") then
+                if _G.KingsScourgeAuto.Enabled and (_G.SkillCheck.Mode == "Neutral" or _G.SkillCheck.Mode == "Instant") then
                     pcall(function()
-                        hitEv:FireServer(_G.KingsScourgeAuto.Mode)
+                        local char = Player.Character
+                        local isDoingProgress = char and (char:GetAttribute("IsRepairing") == true or char:GetAttribute("Repairing") == true or PlayerGui:FindFirstChild("SkillCheckPromptGui"))
+                        if isDoingProgress then
+                            hitEv:FireServer(_G.KingsScourgeAuto.Mode)
+                        end
                     end)
                 end
             end)
@@ -622,26 +1018,31 @@ pcall(function()
     end
 end)
 
+-- OPTIMIZED: Throttle King's Scourge to 0.25s
 task.spawn(function()
-    while task.wait(0.1) do
+    while task.wait(0.25) do
         if _G.KingsScourgeAuto.Enabled then
             pcall(function()
-                local ksHitEvent = ReplicatedStorage:FindFirstChild("Remotes")
-                    and ReplicatedStorage.Remotes:FindFirstChild("KillerPerks")
-                    and ReplicatedStorage.Remotes.KillerPerks:FindFirstChild("kingscourge")
-                    and ReplicatedStorage.Remotes.KillerPerks.kingscourge:FindFirstChild("KingScourgeHit")
-                
-                if ksHitEvent then
-                    local map = workspace:FindFirstChild("Map") or workspace:FindFirstChild("WorkspaceMap") or workspace
-                    local genPoint = nil
-                    for _, obj in ipairs(map:GetDescendants()) do
-                        if obj:IsA("BasePart") and (obj.Name == "GeneratorPoint2" or obj.Name:match("^GeneratorPoint%d+$")) then
-                            genPoint = obj
-                            break
+                local char = Player.Character
+                local isDoingProgress = char and (char:GetAttribute("IsRepairing") == true or char:GetAttribute("Repairing") == true or PlayerGui:FindFirstChild("SkillCheckPromptGui"))
+                if isDoingProgress then
+                    local ksHitEvent = ReplicatedStorage:FindFirstChild("Remotes")
+                        and ReplicatedStorage.Remotes:FindFirstChild("KillerPerks")
+                        and ReplicatedStorage.Remotes.KillerPerks:FindFirstChild("kingscourge")
+                        and ReplicatedStorage.Remotes.KillerPerks.kingscourge:FindFirstChild("KingScourgeHit")
+                    
+                    if ksHitEvent then
+                        local map = workspace:FindFirstChild("Map") or workspace:FindFirstChild("WorkspaceMap") or workspace
+                        local genPoint = nil
+                        for _, obj in ipairs(map:GetDescendants()) do
+                            if obj:IsA("BasePart") and (obj.Name == "GeneratorPoint2" or obj.Name:match("^GeneratorPoint%d+$")) then
+                                genPoint = obj
+                                break
+                            end
                         end
-                    end
-                    if genPoint then
-                        ksHitEvent:FireServer(genPoint, _G.KingsScourgeAuto.Mode)
+                        if genPoint then
+                            ksHitEvent:FireServer(genPoint, _G.KingsScourgeAuto.Mode)
+                        end
                     end
                 end
             end)
@@ -819,8 +1220,9 @@ SurvivorTab:Toggle({
     Callback = function(v) _G.AuraHeal.Enabled = v end
 })
 
+-- OPTIMIZED: Throttle AuraHeal loop
 task.spawn(function()
-    while task.wait(0.2) do
+    while task.wait(0.3) do
         if _G.AuraHeal.Enabled then
             pcall(function()
                 local remotes = ReplicatedStorage:FindFirstChild("Remotes")
@@ -909,8 +1311,9 @@ SurvivorTab:Toggle({
     end
 })
 
+-- OPTIMIZED: Throttle Pallet scan & check
 task.spawn(function()
-    while task.wait(0.2) do
+    while task.wait(0.3) do
         if _G.AutoDropPallets and not PalletDropCooldown then
             pcall(function()
                 local char = Player.Character
@@ -1006,7 +1409,7 @@ end
 
 local LastFlee = 0
 task.spawn(function()
-    while task.wait(0.2) do
+    while task.wait(0.3) do
         if _G.AutoFlee then
             pcall(function()
                 local root = getRoot()
@@ -1025,10 +1428,10 @@ task.spawn(function()
     end
 end)
 
--- Perbaikan Sistem Auto Crouch (Auto Evade Killer)
+-- Auto Crouch / Auto Evade Killer
 local HyunjinSettings = {
     autoCrouchExclusive = false,
-    autoCrouchRadiusExclusive = 18,
+    autoCrouchRadiusExclusive = 22,
 }
 
 local killerAnimationIds = {
@@ -1052,6 +1455,7 @@ local function setCrouchState(state)
     end)
 end
 
+-- OPTIMIZED: Throttle Auto Evade loop to 0.1s
 task.spawn(function()
     while task.wait(0.1) do
         if HyunjinSettings.autoCrouchExclusive then
@@ -1060,7 +1464,8 @@ task.spawn(function()
                 local root = char and char:FindFirstChild("HumanoidRootPart")
                 if not root then return end
 
-                local shouldCrouch = false
+                local shouldEvade = false
+                local killerHrp = nil
                 for _, plr in ipairs(Players:GetPlayers()) do
                     if plr ~= Player and plr.Character then
                         local pChar = plr.Character
@@ -1071,6 +1476,7 @@ task.spawn(function()
                             if teamName:find("killer") or pChar:FindFirstChild("Killer") then
                                 local dist = (pRoot.Position - root.Position).Magnitude
                                 if dist <= HyunjinSettings.autoCrouchRadiusExclusive then
+                                    killerHrp = pRoot
                                     local animAnimator = pHum:FindFirstChildOfClass("Animator") or pChar:FindFirstChildOfClass("Animator")
                                     if animAnimator then
                                         for _, track in ipairs(animAnimator:GetPlayingAnimationTracks()) do
@@ -1079,13 +1485,13 @@ task.spawn(function()
                                                 if animId then
                                                     for _, id in ipairs(killerAnimationIds) do
                                                         if animId == id then
-                                                            shouldCrouch = true
+                                                            shouldEvade = true
                                                             break
                                                         end
                                                     end
                                                 end
                                             end
-                                            if shouldCrouch then break end
+                                            if shouldEvade then break end
                                         end
                                     end
                                 end
@@ -1093,7 +1499,12 @@ task.spawn(function()
                         end
                     end
                 end
-                setCrouchState(shouldCrouch)
+
+                setCrouchState(shouldEvade)
+                if shouldEvade and killerHrp then
+                    local evadeDir = (root.Position - killerHrp.Position).Unit
+                    root.CFrame = CFrame.new(root.Position + evadeDir * 4, root.Position + evadeDir * 10 + Vector3.new(0, root.Position.Y, 0))
+                end
             end)
         end
     end
@@ -1149,7 +1560,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Gun System Section & Moved Silent Aim Section under Survivor Tab
+-- Gun System Section & Silent Aim
 SurvivorTab:Section({ Title = "Gun System", Icon = "crosshair" })
 
 _G.GunSystem = {
@@ -1527,8 +1938,9 @@ local function checkKillerAnimations()
     end
 end
 
+-- OPTIMIZED: Throttle Auto Parry to 0.1s
 task.spawn(function()
-    while task.wait(0.05) do
+    while task.wait(0.1) do
         checkKillerAnimations()
         updateParryVisualizer()
     end
@@ -1898,12 +2310,9 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ==========================================
--- INTEGRATED: Camera Veil & SnapLine ESP, Silent Spear (Veil), & Anti Blind
--- ==========================================
+-- VEIL, SPEAR & ANTI BLIND SYSTEMS
 KillerTab:Section({ Title = "Veil & Spear Systems" })
 
--- Camera Veil & SnapLine ESP State & Logic
 local VeilCamSettings = {
     Enabled = false,
     SnapLine = false,
@@ -1933,7 +2342,6 @@ KillerTab:Toggle({
     end
 })
 
--- Silent Spear (Veil) State & Logic
 local SilentSpearSettings = {
     Enabled = false,
     FovVisible = false,
@@ -1968,7 +2376,6 @@ KillerTab:Slider({
     Callback = function(v) SilentSpearSettings.FovRadius = v end
 })
 
--- Anti Blind State & Logic
 local AntiBlindEnabled = false
 KillerTab:Toggle({
     Title = "Anti Blind",
@@ -1978,8 +2385,9 @@ KillerTab:Toggle({
     end
 })
 
+-- OPTIMIZED: Throttle AntiBlind loop to 0.2s
 task.spawn(function()
-    while task.wait(0.1) do
+    while task.wait(0.2) do
         if AntiBlindEnabled then
             pcall(function()
                 for _, guiName in ipairs({"FlashlightBlind", "BlindGui", "Blinded", "FlashbangGui"}) do
@@ -1999,7 +2407,6 @@ task.spawn(function()
     end
 end)
 
--- Veil & Spear Render Loop
 RunService.RenderStepped:Connect(function()
     local cam = workspace.CurrentCamera
     local center = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
@@ -2317,9 +2724,7 @@ VisualTab:Colorpicker({
     Callback = function(color) Settings.espGateColor = color; Config.Objects.Gate.Color = color end
 })
 
--- ==========================================
 -- ADVANCED ESP ENGINE & MAP CACHE
--- ==========================================
 local ESPFramesFolder = Instance.new("Folder")
 ESPFramesFolder.Name = "__HyunjinESPEx__"
 ESPFramesFolder.Parent = workspace
@@ -2375,17 +2780,20 @@ end
 local function GetPlayerRole(player)
     local ok, team = pcall(function() return player.Team and player.Team.Name:lower() or "" end)
     if ok and (team:find("killer") or team:find("slayer")) then
-        ESPState.playerRoles[player] = "killer"
-        return "killer"
+        ESPState.playerRoles[player] = "KILLER"
+        return "KILLER"
+    elseif ok and (team:find("spectator") or team:find("lobby")) then
+        ESPState.playerRoles[player] = "SPECTATOR"
+        return "SPECTATOR"
     end
-    ESPState.playerRoles[player] = "survivor"
-    return "survivor"
+    ESPState.playerRoles[player] = "SURVIVOR"
+    return "SURVIVOR"
 end
 
 local function Oqpmb(plr, char)
     local outline = ESPState.outlineObjects[plr]
     if not outline or not char or not char.Parent then return end
-    local isKiller = (GetPlayerRole(plr) == "killer")
+    local isKiller = (GetPlayerRole(plr) == "KILLER")
     local col = isKiller and Settings.killerColor or Settings.survivorColor
     local showOutline = isKiller and Settings.killerShowOutline or Settings.survivorShowOutline
     local outlineOnly = isKiller and Settings.killerOutlineOnly or Settings.survivorOutlineOnly
@@ -2414,7 +2822,7 @@ local function esp27_func(plr, char)
         espObj.itemBillboard.Adornee = headOrTorso
         espObj.itemBillboard.Enabled = true
     end
-    local isKiller = (GetPlayerRole(plr) == "killer")
+    local isKiller = (GetPlayerRole(plr) == "KILLER")
     espObj.nameLabel.Visible = (isKiller and Settings.killerShowName) or (not isKiller and Settings.survivorShowName)
     espObj.nameLabel.Text = plr.Name
 end
@@ -2441,7 +2849,7 @@ local function esp6_func(plr)
     nameLabel.TextSize = 12
     nameLabel.Font = Enum.Font.GothamBold
     nameLabel.Text = plr.Name
-    local isKiller = (GetPlayerRole(plr) == "killer")
+    local isKiller = (GetPlayerRole(plr) == "KILLER")
     nameLabel.Visible = (isKiller and Settings.killerShowName) or (not isKiller and Settings.survivorShowName)
     nameLabel.Parent = bb
 
@@ -2508,7 +2916,7 @@ Players.PlayerRemoving:Connect(removePlayerESP)
 RunService.Heartbeat:Connect(function()
     for plr, espObj in pairs(ESPState.espObjects) do
         if plr and plr.Character then
-            local isKiller = (GetPlayerRole(plr) == "killer")
+            local isKiller = (GetPlayerRole(plr) == "KILLER")
             if espObj.billboard then
                 espObj.billboard.MaxDistance = Settings.maxDistance
                 espObj.nameLabel.Visible = (isKiller and Settings.killerShowName) or (not isKiller and Settings.survivorShowName)
@@ -2521,7 +2929,7 @@ RunService.Heartbeat:Connect(function()
 
     for plr, outline in pairs(ESPState.outlineObjects) do
         if plr and plr.Character then
-            local isKiller = (GetPlayerRole(plr) == "killer")
+            local isKiller = (GetPlayerRole(plr) == "KILLER")
             local showOutline = isKiller and Settings.killerShowOutline or Settings.survivorShowOutline
             local outlineOnly = isKiller and Settings.killerOutlineOnly or Settings.survivorOutlineOnly
             local col = isKiller and Settings.killerColor or Settings.survivorColor
@@ -2855,6 +3263,9 @@ local CrosshairDrawings = {}
 local crosshairCreated = false
 local lastCrosshairStyle = CrosshairConfig.Style
 
+-- OPTIMIZED: Throttle map object / heavy ESP updates inside Heartbeat using a timer counter to save performance
+local espUpdateTick = 0
+
 RunService.Heartbeat:Connect(function()
     if VisualSettings.Fullbright then
         Lighting.Brightness = VisualSettings.Brightness
@@ -2873,65 +3284,71 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    for _, gen in ipairs(ESPState.cachedMapObjects.Generators) do
-        if gen and gen.Parent then
-            UpdateGeneratorESP(gen)
-        end
-    end
+    -- Throttled map ESP update (runs every ~0.2s instead of every single frame to prevent severe lag)
+    espUpdateTick = espUpdateTick + 1
+    if espUpdateTick >= 12 then
+        espUpdateTick = 0
 
-    for _, pallet in ipairs(ESPState.cachedMapObjects.Pallets) do
-        if pallet and pallet.Parent then
-            local meta = ESPState.cachedPalletMeta[pallet]
-            if Settings.espPalletEnabled and meta and not meta.isFake then
-                ApplyBolongHighlight(pallet, Settings.espPalletColor)
-            else
-                RemoveBolongHighlight(pallet)
+        for _, gen in ipairs(ESPState.cachedMapObjects.Generators) do
+            if gen and gen.Parent then
+                UpdateGeneratorESP(gen)
             end
         end
-    end
 
-    for _, hook in ipairs(ESPState.cachedMapObjects.Hooks) do
-        if hook and hook.Parent then
-            local parts = ESPState.cachedHookMeshParts[hook]
-            if Settings.espHookEnabled then
-                if parts and #parts > 0 then
-                    for _, p in ipairs(parts) do ApplyBolongHighlight(p, Settings.espHookColor) end
+        for _, pallet in ipairs(ESPState.cachedMapObjects.Pallets) do
+            if pallet and pallet.Parent then
+                local meta = ESPState.cachedPalletMeta[pallet]
+                if Settings.espPalletEnabled and meta and not meta.isFake then
+                    ApplyBolongHighlight(pallet, Settings.espPalletColor)
                 else
-                    ApplyBolongHighlight(hook, Settings.espHookColor)
+                    RemoveBolongHighlight(pallet)
+                end
+            end
+        end
+
+        for _, hook in ipairs(ESPState.cachedMapObjects.Hooks) do
+            if hook and hook.Parent then
+                local parts = ESPState.cachedHookMeshParts[hook]
+                if Settings.espHookEnabled then
+                    if parts and #parts > 0 then
+                        for _, p in ipairs(parts) do ApplyBolongHighlight(p, Settings.espHookColor) end
+                    else
+                        ApplyBolongHighlight(hook, Settings.espHookColor)
+                    end
+                else
+                    if parts then for _, p in ipairs(parts) do RemoveBolongHighlight(p) end else RemoveBolongHighlight(hook) end
+                end
+            end
+        end
+
+        for _, gate in ipairs(ESPState.cachedMapObjects.Gates) do
+            if gate and gate.Parent then
+                if Settings.espGateEnabled then
+                    ApplyBolongHighlight(gate, Settings.espGateColor)
+                else
+                    RemoveBolongHighlight(gate)
+                end
+            end
+        end
+
+        for win, box in pairs(ESPState.windowEspObjects) do
+            if win and win.Parent and box and box.Parent then
+                if Settings.espWindowEnabled then
+                    box.Color3 = Settings.espWindowColor
+                    box.Size = win.Size
+                    box.Visible = true
+                else
+                    box.Visible = false
                 end
             else
-                if parts then for _, p in ipairs(parts) do RemoveBolongHighlight(p) end else RemoveBolongHighlight(hook) end
+                RemoveWindowESP(win)
             end
         end
-    end
-
-    for _, gate in ipairs(ESPState.cachedMapObjects.Gates) do
-        if gate and gate.Parent then
-            if Settings.espGateEnabled then
-                ApplyBolongHighlight(gate, Settings.espGateColor)
-            else
-                RemoveBolongHighlight(gate)
-            end
-        end
-    end
-
-    for win, box in pairs(ESPState.windowEspObjects) do
-        if win and win.Parent and box and box.Parent then
-            if Settings.espWindowEnabled then
-                box.Color3 = Settings.espWindowColor
-                box.Size = win.Size
-                box.Visible = true
-            else
-                box.Visible = false
-            end
-        else
-            RemoveWindowESP(win)
-        end
-    end
-    if Settings.espWindowEnabled then
-        for _, win in ipairs(ESPState.cachedMapObjects.Windows) do
-            if win and win.Parent and not ESPState.windowEspObjects[win] then
-                AddWindowESP(win)
+        if Settings.espWindowEnabled then
+            for _, win in ipairs(ESPState.cachedMapObjects.Windows) do
+                if win and win.Parent and not ESPState.windowEspObjects[win] then
+                    AddWindowESP(win)
+                end
             end
         end
     end
@@ -2956,7 +3373,7 @@ RunService.Heartbeat:Connect(function()
                 local char101 = nil
                 local char102 = math.huge
                 for _, Bw0M_ in ipairs(Players:GetPlayers()) do
-                    if Bw0M_ ~= Player and GetPlayerRole(Bw0M_) == "killer" then
+                    if Bw0M_ ~= Player and GetPlayerRole(Bw0M_) == "KILLER" then
                         local char103 = Bw0M_.Character
                         if char103 then
                             local char104 = char103:FindFirstChildOfClass("Humanoid")
@@ -3128,7 +3545,7 @@ RunService.Heartbeat:Connect(function()
         for _, p in ipairs(Players:GetPlayers()) do
             if p ~= Player and p.Character then
                 local root = p.Character:FindFirstChild("HumanoidRootPart")
-                local isKiller = (GetPlayerRole(p) == "killer")
+                local isKiller = (GetPlayerRole(p) == "KILLER")
                 if isKiller and root then
                     local dist = (root.Position - myRoot.Position).Magnitude
                     if dist < Settings.warnDist1 then killerNearby = true end
@@ -3678,15 +4095,58 @@ CheckTab:Button({ Title = "Reset to Original Skin", Callback = function()
     end
 end })
 
--- ==========================================
--- INTEGRATED CONFIGURATION SYSTEM (WINDUI CONFIG)
--- ==========================================
+-- CONFIGURATION SYSTEM
 CheckTab:Section({ Title = "Configuration / UI Settings" })
 
-local ConfigFileName = "HyunjinGUI_ViolenceDistrict.json"
+local ConfigFolder = "HyunjinConfigs"
+if not isfolder or not isfolder(ConfigFolder) then
+    pcall(function() makefolder(ConfigFolder) end)
+end
+
+local inputConfigName = "default"
+local selectedConfigDropdown = "default"
+
+CheckTab:Input({
+    Title = "Config Name",
+    Default = "default",
+    Placeholder = "Ketik nama config...",
+    Callback = function(val)
+        if val and val ~= "" then
+            inputConfigName = val
+        end
+    end
+})
+
+local function getSavedConfigsList()
+    local list = {}
+    pcall(function()
+        if listfiles and isfolder(ConfigFolder) then
+            for _, file in ipairs(listfiles(ConfigFolder)) do
+                local name = file:match("([^/]+)$"):gsub("%.json$", "")
+                table.insert(list, name)
+            end
+        end
+    end)
+    if #list == 0 then table.insert(list, "default") end
+    return list
+end
+
+local configDropdownElement
+configDropdownElement = CheckTab:Dropdown({
+    Title = "Select Config",
+    Values = getSavedConfigsList(),
+    Default = "default",
+    Callback = function(v)
+        if v then selectedConfigDropdown = v end
+    end
+})
 
 local function SaveConfiguration()
     pcall(function()
+        if not isfolder(ConfigFolder) then makefolder(ConfigFolder) end
+        local fileName = (inputConfigName ~= "" and inputConfigName) or selectedConfigDropdown or "default"
+        local filePath = ConfigFolder .. "/" .. fileName .. ".json"
+        
         local configData = {
             WalkSpeed = Movement.WalkSpeedValue,
             JumpPower = Movement.JumpPowerValue,
@@ -3695,31 +4155,67 @@ local function SaveConfiguration()
             SurvivorColor = {Settings.survivorColor.R, Settings.survivorColor.G, Settings.survivorColor.B},
         }
         if writefile then
-            writefile(ConfigFileName, HttpService:JSONEncode(configData))
-            WindUI:Notify({ Title = "Configuration", Content = "Berhasil menyimpan konfigurasi!", Duration = 2 })
+            writefile(filePath, HttpService:JSONEncode(configData))
+            WindUI:Notify({ Title = "Configuration", Content = "Berhasil menyimpan config: " .. fileName, Duration = 2 })
+            
+            if configDropdownElement and configDropdownElement.Refresh then
+                configDropdownElement:Refresh(getSavedConfigsList(), true)
+            end
         end
     end)
 end
 
 local function LoadConfiguration()
     pcall(function()
-        if readfile and isfile and isfile(ConfigFileName) then
-            local content = readfile(ConfigFileName)
+        local fileName = selectedConfigDropdown ~= "" and selectedConfigDropdown or inputConfigName or "default"
+        local filePath = ConfigFolder .. "/" .. fileName .. ".json"
+        
+        if readfile and isfile and isfile(filePath) then
+            local content = readfile(filePath)
             local data = HttpService:JSONDecode(content)
             if data then
                 if data.WalkSpeed then Movement.WalkSpeedValue = data.WalkSpeed end
                 if data.JumpPower then Movement.JumpPowerValue = data.JumpPower end
                 if data.MaxDistance then Settings.maxDistance = data.MaxDistance end
-                WindUI:Notify({ Title = "Configuration", Content = "Berhasil memuat konfigurasi!", Duration = 2 })
+                WindUI:Notify({ Title = "Configuration", Content = "Berhasil memuat config: " .. fileName, Duration = 2 })
             end
         else
-            WindUI:Notify({ Title = "Configuration", Content = "File konfigurasi tidak ditemukan!", Duration = 2 })
+            WindUI:Notify({ Title = "Configuration", Content = "File config '" .. fileName .. "' tidak ditemukan!", Duration = 2 })
+        end
+    end)
+end
+
+local function DeleteConfiguration()
+    pcall(function()
+        local fileName = selectedConfigDropdown ~= "" and selectedConfigDropdown or inputConfigName or "default"
+        local filePath = ConfigFolder .. "/" .. fileName .. ".json"
+        
+        if delfile and isfile and isfile(filePath) then
+            delfile(filePath)
+            WindUI:Notify({ Title = "Configuration", Content = "Berhasil menghapus config: " .. fileName, Duration = 2 })
+            
+            if configDropdownElement and configDropdownElement.Refresh then
+                configDropdownElement:Refresh(getSavedConfigsList(), true)
+            end
+        else
+            WindUI:Notify({ Title = "Configuration", Content = "Config tidak dapat ditemukan untuk dihapus!", Duration = 2 })
+        end
+    end)
+end
+
+local function RefreshConfigList()
+    pcall(function()
+        if configDropdownElement and configDropdownElement.Refresh then
+            configDropdownElement:Refresh(getSavedConfigsList(), true)
+            WindUI:Notify({ Title = "Configuration", Content = "Daftar config diperbarui!", Duration = 2 })
         end
     end)
 end
 
 CheckTab:Button({ Title = "Save Config", Callback = SaveConfiguration })
 CheckTab:Button({ Title = "Load Config", Callback = LoadConfiguration })
+CheckTab:Button({ Title = "Delete Config", Callback = DeleteConfiguration })
+CheckTab:Button({ Title = "Refresh List", Callback = RefreshConfigList })
 
 CheckTab:Button({
     Title = "Join Discord",
@@ -3739,7 +4235,7 @@ HvHTab:Section({ Title = "Script Info" })
 HvHTab:Paragraph({
     Title = "Violence District - Freemium",
     Desc = "Version: 1.0.0\nGame: Violence District\nDeveloper: Noellandxyza",
-    Image = AvatarThumbnail,
+    Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. Player.UserId .. "&width=150&height=150&format=png",
     ImageSize = 36,
 })
 
@@ -3756,7 +4252,7 @@ HvHTab:Section({ Title = "Credits" })
 HvHTab:Paragraph({
     Title = "Credits & Support",
     Desc = "Developer: • Hyunjin\nLibrary: WindUI Edition\nSupport the Dev via Sociabuzz",
-    Image = AvatarThumbnail,
+    Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. Player.UserId .. "&width=150&height=150&format=png",
     ImageSize = 36,
 })
 
@@ -3800,9 +4296,6 @@ task.spawn(function()
                 local cleanKC = kcObj.Text:gsub("%%", ""):gsub("%s+", "")
                 cachedKC = cleanKC
             end
-
-            ProfileParagraph:SetTitle("[" .. cachedLevel .. "] " .. Player.Name)
-            ProfileParagraph:SetDesc("🌟 : " .. cachedGears + 0 .. " | ⚙️ : " .. cachedScrews .. " | 💀: " .. cachedKC .. "%")
         end)
     end
 end)
@@ -3839,7 +4332,7 @@ task.spawn(function()
                 local nk = players[1]
                 if nk then
                     local killerName = tostring(GetGameValue(nk, "SelectedKiller") or "Slasher")
-                    local playerName = nk == Player and "YOU" or tostring(nk.Name)
+                    local playerName = nk.Name
                     local lvlText = "39"
                     pcall(function()
                         local lb = PlayerGui.Spectator.Info.Leaderboard.Leaderboard
@@ -3888,35 +4381,68 @@ task.spawn(function()
                 MatchStatusParagraph:SetDesc(string.format("Map : %s\nKiller : %s\nGenerators : %s", currentMapStr, currentKillerStr, currentGenStr))
             end
 
-            local playerStatsList = {}
+            local playerDataForCards = {}
+
             pcall(function()
-                local lb = PlayerGui.Spectator.Info.Leaderboard.Leaderboard
-                for _, child in ipairs(lb:GetChildren()) do
-                    if child:IsA("GuiObject") or child:IsA("Frame") then
-                        local pName = child.Name
-                        local pLvl = "1"
-                        local pKC = "0"
-                        
-                        local bLevel = child:FindFirstChild("Border") and child.Border:FindFirstChild("Level")
-                        if bLevel and bLevel:IsA("TextLabel") and bLevel.Text ~= "" and bLevel.Text ~= "1" then
-                            pLvl = bLevel.Text
-                        end
+                for _, p in ipairs(Players:GetPlayers()) do
+                    local pName = p.Name
+                    local pLvl = (p == Player and cachedLevel) or "1"
+                    local pKC = (p == Player and cachedKC) or "0"
+                    local roleStr = "SURVIVOR"
 
-                        local kcContainer = child:FindFirstChild("kc")
-                        local kcVal = kcContainer and (kcContainer:FindFirstChild("kc") or kcContainer:FindFirstChildOfClass("TextLabel"))
-                        if kcVal and kcVal:IsA("TextLabel") and kcVal.Text ~= "" then
-                            pKC = kcVal.Text:gsub("%%", ""):gsub("%s+", "")
-                        end
-
-                        table.insert(playerStatsList, string.format("•[%s] %s [%s]", pLvl, pName, pKC))
+                    local team = p.Team and p.Team.Name:lower() or ""
+                    if team:find("killer") or team:find("slayer") then
+                        roleStr = "KILLER"
+                    elseif team:find("spectator") or team:find("lobby") then
+                        roleStr = "SPECTATOR"
                     end
+
+                    pcall(function()
+                        local lb = PlayerGui.Spectator.Info.Leaderboard.Leaderboard
+                        local pNode = lb:FindFirstChild(pName)
+                        if pNode then
+                            local bLevel = pNode:FindFirstChild("Border") and pNode.Border:FindFirstChild("Level")
+                            if bLevel and bLevel:IsA("TextLabel") and bLevel.Text ~= "" then
+                                pLvl = bLevel.Text
+                            end
+
+                            local kcContainer = pNode:FindFirstChild("kc")
+                            local kcVal = kcContainer and (kcContainer:FindFirstChild("kc") or kcContainer:FindFirstChildOfClass("TextLabel"))
+                            if kcVal and kcVal:IsA("TextLabel") and kcVal.Text ~= "" then
+                                pKC = kcVal.Text:gsub("%%", ""):gsub("%s+", "")
+                            end
+                        end
+                    end)
+
+                    table.insert(playerDataForCards, {
+                        Player = p,
+                        Name = pName,
+                        Level = pLvl,
+                        KC = pKC,
+                        Role = roleStr
+                    })
                 end
             end)
 
-            if #playerStatsList > 0 then
-                cachedPlayerStatsText = table.concat(playerStatsList, "\n")
+            if #playerDataForCards == 0 then
+                for _, p in ipairs(Players:GetPlayers()) do
+                    local roleStr = "SURVIVOR"
+                    local team = p.Team and p.Team.Name:lower() or ""
+                    if team:find("killer") or team:find("slayer") then roleStr = "KILLER"
+                    elseif team:find("spectator") or team:find("lobby") then roleStr = "SPECTATOR" end
+                    table.insert(playerDataForCards, {
+                        Player = p,
+                        Name = p.Name,
+                        Level = (p == Player and cachedLevel) or "1",
+                        KC = (p == Player and cachedKC) or "0",
+                        Role = roleStr
+                    })
+                end
             end
-            AllPlayersParagraph:SetDesc(cachedPlayerStatsText)
+
+            pcall(function()
+                UpdatePlayerCards(playerDataForCards)
+            end)
         end)
     end
 end)
@@ -3944,6 +4470,6 @@ end)
 
 WindUI:Notify({
     Title = "Hyunjin GUI Loaded",
-    Content = "😜",
+    Content = "Optimized & Lag-Free 🚀",
     Duration = 3
 })
