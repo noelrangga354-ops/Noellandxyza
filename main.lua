@@ -894,43 +894,190 @@ SurvivorTab:Divider()
 
 SurvivorTab:Section({ Title = "Generator System", Icon = "cpu" })
 
-_G.SkillCheck = {
-    Enabled = false,
-    Mode = "Neutral"
+local remote8 = {active = false, target = nil, generator = nil}
+pcall(function()
+    local inst35 = ReplicatedStorage.Remotes.KillerPerks.kingscourge:WaitForChild("KingScourgeStart")
+    local remote9 = ReplicatedStorage.Remotes.KillerPerks.kingscourge:WaitForChild("KingScourgeEnd")
+    inst35.OnClientEvent:Connect(function(WOHbMonN, MOqXmo, _DzI0UblIDqXnU)
+        remote8.active = true
+        remote8.target = MOqXmo
+        remote8.generator = WOHbMonN
+    end)
+    remote9.OnClientEvent:Connect(function()
+        remote8.active = false
+        remote8.target = nil
+        remote8.generator = nil
+    end)
+end)
+
+local function gen1_func()
+    for _, QXuowX_bv in ipairs({"SkillCheckPromptGui", "SkillCheckPromptGui-con"}) do
+        local inst36 = PlayerGui:FindFirstChild(QXuowX_bv, true)
+        if inst36 then
+            local inst37 = inst36:FindFirstChild("Check", true)
+            if inst37 and inst37.Visible then
+                return inst37:FindFirstChild("Line", true), inst37:FindFirstChild("Goal", true)
+            end
+        end
+    end
+end
+
+local inst38 = nil
+local function IXXqZQbU()
+    if inst38 and inst38.Parent then
+        return inst38
+    end
+    local inst39 = PlayerGui:FindFirstChild("Survivor-mob", true)
+    if not inst39 then return nil end
+    local inst40 = inst39:FindFirstChild("Controls", true)
+    if not inst40 then return nil end
+    local inst41 = inst40:FindFirstChild("action")
+    if inst41 and inst41:IsA("GuiButton") then
+        inst38 = inst41
+        return inst41
+    end
+    inst41 = inst40:FindFirstChild("Gui-mob")
+    if inst41 and inst41:IsA("GuiButton") then
+        inst38 = inst41
+        return inst41
+    end
+    return nil
+end
+
+local function gui2_func()
+    local btn1 = IXXqZQbU()
+    if btn1 and type(firesignal) == "function" then
+        firesignal(btn1.MouseButton1Down)
+        task.delay(0.05, function()
+            if btn1 and btn1.Parent then
+                firesignal(btn1.MouseButton1Up)
+                firesignal(btn1.MouseButton1Click)
+            end
+        end)
+        return
+    end
+    local plplxbp = PlayerGui:FindFirstChild("check", true)
+    if plplxbp and plplxbp:IsA("GuiObject") and plplxbp.Visible then
+        local inst42 = plplxbp.AbsolutePosition
+        local inst43 = plplxbp.AbsoluteSize
+        local btn2 = GuiService.GetGuiInset(GuiService)
+        local btn3 = inst42.X + (inst43.X / 2) + btn2.X
+        local btn4 = inst42.Y + (inst43.Y / 2) + btn2.Y
+        pcall(function()
+            VirtualInputManager:SendMouseButtonEvent(btn3, btn4, 0, true, game, 1)
+            task.wait(0.01)
+            VirtualInputManager:SendMouseButtonEvent(btn3, btn4, 0, false, game, 1)
+        end)
+    else
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+        task.wait()
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+    end
+end
+
+-- State variables for Auto Generator loop
+local AutoGeneratorState = {
+    autoGenerator = false,
+    autoGeneratorMode = "Instant", -- Options: "Instant", "Perfect", "Normal", "Gacha"
+    lastPressTime = 0,
+    lastSkillHit = 0,
+    lastGoalRot = nil,
+    prevLr = nil,
+    instantLastVisible = false,
+    randomIsNeutral = false
 }
 
+-- Main Auto Generator Logic Loop (can be run via RunService.Heartbeat or task.spawn loop)
+task.spawn(function()
+    while true do
+        task.wait()
+        if AutoGeneratorState.autoGenerator then
+            local Gen1, bvq0NXowOHZO_ = gen1_func()
+            if not (Gen1 and bvq0NXowOHZO_) then
+                AutoGeneratorState.instantLastVisible = false
+                AutoGeneratorState.lastGoalRot = nil
+                AutoGeneratorState.prevLr = nil
+            else
+                local gen8 = bvq0NXowOHZO_.Rotation
+                local esp29 = Gen1.Rotation
+                local esp30 = tick()
+                local gen9 = remote8.active and 0.05 or 0.1
+                
+                if esp30 - AutoGeneratorState.lastPressTime >= gen9 then
+                    if AutoGeneratorState.autoGeneratorMode == "Instant" then
+                        if not AutoGeneratorState.instantLastVisible or gen8 ~= AutoGeneratorState.lastGoalRot then
+                            Gen1.Rotation = gen8 + 109
+                            AutoGeneratorState.lastGoalRot = gen8
+                            AutoGeneratorState.instantLastVisible = true
+                            AutoGeneratorState.lastPressTime = esp30
+                            AutoGeneratorState.lastSkillHit = esp30
+                            gui2_func()
+                        end
+                    else
+                        local esp31 = (esp29 - gen8) % 360
+                        local esp32 = -1
+                        if AutoGeneratorState.prevLr and AutoGeneratorState.lastGoalRot == gen8 then
+                            esp32 = (AutoGeneratorState.prevLr - gen8) % 360
+                        end
+                        AutoGeneratorState.lastGoalRot = gen8
+                        
+                        local Gen2, _lpIZ1OX
+                        if AutoGeneratorState.autoGeneratorMode == "Perfect" then
+                            Gen2 = 102
+                            _lpIZ1OX = 116
+                        elseif AutoGeneratorState.autoGeneratorMode == "Normal" then
+                            Gen2 = 116
+                            _lpIZ1OX = 159
+                        elseif AutoGeneratorState.autoGeneratorMode == "Gacha" then
+                            if not AutoGeneratorState.randomIsNeutral then
+                                Gen2 = 102
+                                _lpIZ1OX = 116
+                            else
+                                Gen2 = 116
+                                _lpIZ1OX = 159
+                            end
+                        else
+                            return
+                        end
+                        
+                        local esp33 = esp31 >= Gen2 and esp31 <= _lpIZ1OX
+                        local esp34 = esp32 >= 0 and esp32 < Gen2 and esp31 > _lpIZ1OX
+                        if esp33 or esp34 then
+                            if esp34 then
+                                Gen1.Rotation = gen8 + (Gen2 + _lpIZ1OX) / 2
+                            end
+                            AutoGeneratorState.lastPressTime = esp30
+                            AutoGeneratorState.lastSkillHit = esp30
+                            gui2_func()
+                            if AutoGeneratorState.autoGeneratorMode == "Gacha" then
+                                AutoGeneratorState.randomIsNeutral = not AutoGeneratorState.randomIsNeutral
+                            end
+                        end
+                    end
+                    AutoGeneratorState.prevLr = esp29
+                end
+            end
+        end
+    end
+end)
+
 SurvivorTab:Toggle({
-    Title = "Auto Skill Check",
+    Title = "Auto Generator",
     Default = false,
-    Callback = function(v) _G.SkillCheck.Enabled = v end
+    Callback = function(v)
+        AutoGeneratorState.autoGenerator = v
+    end
 })
 
 SurvivorTab:Dropdown({
-    Title = "Skill Check Mode",
-    Values = {"Neutral", "Instant"},
-    Default = "Neutral",
-    Callback = function(v) _G.SkillCheck.Mode = v end
+    Title = "Auto Generator Mode",
+    Values = {"Instant", "Perfect", "Normal", "Gacha"},
+    Default = "Instant",
+    Callback = function(v)
+        AutoGeneratorState.autoGeneratorMode = v
+    end
 })
 
-_G.KingsScourgeAuto = {
-    Enabled = false,
-    Mode = "success"
-}
-
-SurvivorTab:Toggle({
-    Title = "King's Scourge Auto hit",
-    Default = false,
-    Callback = function(v) _G.KingsScourgeAuto.Enabled = v end
-})
-
-SurvivorTab:Dropdown({
-    Title = "King's Scourge Mode",
-    Values = {"Success", "Neutral"},
-    Default = "Success",
-    Callback = function(v) _G.KingsScourgeAuto.Mode = v:lower() end
-})
-
-_G.AutoGen = false
 local AutoGenGui = Instance.new("ScreenGui")
 AutoGenGui.Name = "HyunjinAutoGenGui"
 AutoGenGui.ResetOnSpawn = false
@@ -995,61 +1142,6 @@ task.spawn(function()
     end
 end)
 
-pcall(function()
-    local ksFolder = ReplicatedStorage:FindFirstChild("Remotes") 
-        and ReplicatedStorage.Remotes:FindFirstChild("KillerPerks") 
-        and ReplicatedStorage.Remotes.KillerPerks:FindFirstChild("kingscourge")
-    if ksFolder then
-        local startEv = ksFolder:FindFirstChild("KingScourgeStart")
-        local hitEv = ksFolder:FindFirstChild("KingScourgeHit")
-        if startEv and hitEv then
-            startEv.OnClientEvent:Connect(function()
-                if _G.KingsScourgeAuto.Enabled and (_G.SkillCheck.Mode == "Neutral" or _G.SkillCheck.Mode == "Instant") then
-                    pcall(function()
-                        local char = Player.Character
-                        local isDoingProgress = char and (char:GetAttribute("IsRepairing") == true or char:GetAttribute("Repairing") == true or PlayerGui:FindFirstChild("SkillCheckPromptGui"))
-                        if isDoingProgress then
-                            hitEv:FireServer(_G.KingsScourgeAuto.Mode)
-                        end
-                    end)
-                end
-            end)
-        end
-    end
-end)
-
--- OPTIMIZED: Throttle King's Scourge to 0.25s
-task.spawn(function()
-    while task.wait(0.25) do
-        if _G.KingsScourgeAuto.Enabled then
-            pcall(function()
-                local char = Player.Character
-                local isDoingProgress = char and (char:GetAttribute("IsRepairing") == true or char:GetAttribute("Repairing") == true or PlayerGui:FindFirstChild("SkillCheckPromptGui"))
-                if isDoingProgress then
-                    local ksHitEvent = ReplicatedStorage:FindFirstChild("Remotes")
-                        and ReplicatedStorage.Remotes:FindFirstChild("KillerPerks")
-                        and ReplicatedStorage.Remotes.KillerPerks:FindFirstChild("kingscourge")
-                        and ReplicatedStorage.Remotes.KillerPerks.kingscourge:FindFirstChild("KingScourgeHit")
-                    
-                    if ksHitEvent then
-                        local map = workspace:FindFirstChild("Map") or workspace:FindFirstChild("WorkspaceMap") or workspace
-                        local genPoint = nil
-                        for _, obj in ipairs(map:GetDescendants()) do
-                            if obj:IsA("BasePart") and (obj.Name == "GeneratorPoint2" or obj.Name:match("^GeneratorPoint%d+$")) then
-                                genPoint = obj
-                                break
-                            end
-                        end
-                        if genPoint then
-                            ksHitEvent:FireServer(genPoint, _G.KingsScourgeAuto.Mode)
-                        end
-                    end
-                end
-            end)
-        end
-    end
-end)
-
 local function GetNearestActiveGenerator()
     local root = getRoot()
     if not root then return nil, nil end
@@ -1086,83 +1178,6 @@ local function GetNearestActiveGenerator()
     end
     return nearestGen, nearestPoint
 end
-
-RunService.RenderStepped:Connect(function()
-    if not _G.SkillCheck.Enabled then return end
-    if _G.SkillCheck.Mode ~= "Instant" and _G.SkillCheck.Mode ~= "Neutral" then return end
-
-    local prompt = PlayerGui:FindFirstChild("SkillCheckPromptGui")
-    if not prompt then return end
-    local check = prompt:FindFirstChild("Check")
-    if not check or not check.Visible then return end
-
-    local line = check:FindFirstChild("Line")
-    local goal = check:FindFirstChild("Goal")
-    if not line or not goal then return end
-
-    pcall(function()
-        if _G.SkillCheck.Mode == "Instant" then
-            line.Rotation = (goal.Rotation + 109) % 360
-        end
-    end)
-end)
-
-local LastConfirm = 0
-task.spawn(function()
-    while task.wait(0.1) do
-        if not _G.SkillCheck.Enabled then continue end
-
-        local prompt = PlayerGui:FindFirstChild("SkillCheckPromptGui")
-        local check = prompt and prompt:FindFirstChild("Check")
-        if not check or not check.Visible then continue end
-
-        local line = check:FindFirstChild("Line")
-        local goal = check:FindFirstChild("Goal")
-        if not line or not goal then continue end
-
-        if _G.SkillCheck.Mode == "Instant" then
-            if tick() - LastConfirm < 0.12 then continue end
-            LastConfirm = tick()
-
-            pcall(function()
-                line.Rotation = (goal.Rotation + 109) % 360
-                local gen, point = GetNearestActiveGenerator()
-                
-                local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-                if remotes and remotes:FindFirstChild("Generator") and remotes.Generator:FindFirstChild("SkillCheckResultEvent") then
-                    remotes.Generator.SkillCheckResultEvent:FireServer("success", 1, gen, point)
-                end
-                TriggerMobileAction("Survivor-mob.Controls.action.check")
-            end)
-
-        elseif _G.SkillCheck.Mode == "Neutral" then
-            if tick() - LastConfirm < 0.11 then continue end
-            LastConfirm = tick()
-
-            pcall(function()
-                local lr = line.Rotation % 360
-                local gr = goal.Rotation % 360
-                local startRange = (gr + 95) % 360
-                local endRange   = (gr + 125) % 360
-                local inRange = (startRange > endRange and (lr >= startRange or lr <= endRange))
-                             or (lr >= startRange and lr <= endRange)
-
-                if inRange then
-                    local gen, point = GetNearestActiveGenerator()
-                    local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-                    if remotes and remotes:FindFirstChild("Generator") and remotes.Generator:FindFirstChild("SkillCheckResultEvent") then
-                        if gen and point then
-                            remotes.Generator.SkillCheckResultEvent:FireServer("neutral", 0, gen, point)
-                        else
-                            remotes.Generator.SkillCheckResultEvent:FireServer("neutral", 0)
-                        end
-                    end
-                    TriggerMobileAction("Survivor-mob.Controls.action.check")
-                end
-            end)
-        end
-    end
-end)
 
 local VaultReplaceMap = {
     ["rbxassetid://83873880822918"] = "rbxassetid://136962284480779"
@@ -2556,6 +2571,9 @@ local Settings = {
 
 local ESPFlags = {
     SCP = false,
+    KillerChams = true,
+    SurvivorChams = true,
+    KillerTracer = false,
 }
 
 local VisualSettings = {
@@ -2579,12 +2597,15 @@ local CrosshairConfig = {
 
 VisualTab:Section({ Title = "Killer ESP" })
 VisualTab:Toggle({ Title = "Show Killer Name", Default = Settings.killerShowName, Callback = function(v) Settings.killerShowName = v end })
+VisualTab:Toggle({ Title = "Killer Chams", Default = ESPFlags.KillerChams, Callback = function(v) ESPFlags.KillerChams = v; Settings.killerShowOutline = v end })
+VisualTab:Toggle({ Title = "Killer Tracer", Default = false, Callback = function(v) ESPFlags.KillerTracer = v end })
 VisualTab:Toggle({ Title = "Show Killer Outline", Default = Settings.killerShowOutline, Callback = function(v) Settings.killerShowOutline = v end })
 VisualTab:Toggle({ Title = "Killer Outline Only", Default = Settings.killerOutlineOnly, Callback = function(v) Settings.killerOutlineOnly = v end })
 VisualTab:Colorpicker({ Title = "Killer Color", Default = Settings.killerColor, Callback = function(c) Settings.killerColor = c; Config.Players.Killer.Color = c end })
 
 VisualTab:Section({ Title = "Survivor ESP" })
 VisualTab:Toggle({ Title = "Show Survivor Name", Default = Settings.survivorShowName, Callback = function(v) Settings.survivorShowName = v end })
+VisualTab:Toggle({ Title = "Survivor Chams", Default = ESPFlags.SurvivorChams, Callback = function(v) ESPFlags.SurvivorChams = v; Settings.survivorShowOutline = v end })
 VisualTab:Toggle({ Title = "Show Survivor Outline", Default = Settings.survivorShowOutline, Callback = function(v) Settings.survivorShowOutline = v end })
 VisualTab:Toggle({ Title = "Survivor Outline Only", Default = Settings.survivorOutlineOnly, Callback = function(v) Settings.survivorOutlineOnly = v end })
 VisualTab:Colorpicker({ Title = "Survivor Color", Default = Settings.survivorColor, Callback = function(c) Settings.survivorColor = c; Config.Players.Survivor.Color = c end })
@@ -2795,7 +2816,7 @@ local function Oqpmb(plr, char)
     if not outline or not char or not char.Parent then return end
     local isKiller = (GetPlayerRole(plr) == "KILLER")
     local col = isKiller and Settings.killerColor or Settings.survivorColor
-    local showOutline = isKiller and Settings.killerShowOutline or Settings.survivorShowOutline
+    local showOutline = isKiller and (Settings.killerShowOutline and ESPFlags.KillerChams) or (Settings.survivorShowOutline and ESPFlags.SurvivorChams)
     local outlineOnly = isKiller and Settings.killerOutlineOnly or Settings.survivorOutlineOnly
 
     outline.Adornee = char
@@ -2890,6 +2911,76 @@ local function esp6_func(plr)
     end
 end
 
+-- Killer Tracer ESP Implementation
+local TracerSettings = {
+    Color = Color3.fromRGB(255, 203, 138),
+    Thickness = 1,
+    Transparency = 1,
+    AutoThickness = true,
+    Length = 15,
+    Smoothness = 0.2
+}
+
+local function SetupKillerTracer(plr)
+    local line = Drawing.new("Line")
+    line.Visible = false
+    line.From = Vector2.new(0, 0)
+    line.To = Vector2.new(0, 0)
+    line.Color = TracerSettings.Color
+    line.Thickness = TracerSettings.Thickness
+    line.Transparency = TracerSettings.Transparency
+
+    local connection
+    connection = RunService.RenderStepped:Connect(function()
+        if ESPFlags.KillerTracer and GetPlayerRole(plr) == "KILLER" and plr.Character ~= nil and plr.Character:FindFirstChild("Humanoid") ~= nil and plr.Character:FindFirstChild("HumanoidRootPart") ~= nil and plr.Character.Humanoid.Health > 0 and plr.Character:FindFirstChild("Head") ~= nil then
+            local headpos, OnScreen = Camera:WorldToViewportPoint(plr.Character.Head.Position)
+            if OnScreen then
+                local offsetCFrame = CFrame.new(0, 0, -TracerSettings.Length)
+                local check = false
+                line.From = Vector2.new(headpos.X, headpos.Y)
+                if TracerSettings.AutoThickness then
+                    local distance = (Player.Character.HumanoidRootPart.Position - plr.Character.HumanoidRootPart.Position).Magnitude
+                    local value = math.clamp(1/distance*100, 0.1, 3)
+                    line.Thickness = value
+                end
+                repeat
+                    local dir = plr.Character.Head.CFrame:ToWorldSpace(offsetCFrame)
+                    offsetCFrame = offsetCFrame * CFrame.new(0, 0, TracerSettings.Smoothness)
+                    local dirpos, vis = Camera:WorldToViewportPoint(Vector3.new(dir.X, dir.Y, dir.Z))
+                    if vis then
+                        check = true
+                        line.To = Vector2.new(dirpos.X, dirpos.Y)
+                        line.Visible = true
+                        offsetCFrame = CFrame.new(0, 0, -TracerSettings.Length)
+                    end
+                until check == true
+            else 
+                line.Visible = false
+            end
+        else 
+            line.Visible = false
+            if Players:FindFirstChild(plr.Name) == nil then
+                connection:Disconnect()
+                line:Remove()
+            end
+        end
+    end)
+end
+
+for _, v in pairs(Players:GetPlayers()) do
+    if v ~= Player then
+        esp6_func(v)
+        coroutine.wrap(SetupKillerTracer)(v)
+    end
+end
+
+Players.PlayerAdded:Connect(function(newplr)
+    if newplr ~= Player then
+        esp6_func(newplr)
+        coroutine.wrap(SetupKillerTracer)(newplr)
+    end
+end)
+
 local function removePlayerESP(plr)
     if ESPState.espObjects[plr] then
         if ESPState.espObjects[plr].billboard then ESPState.espObjects[plr].billboard:Destroy() end
@@ -2907,10 +2998,6 @@ local function removePlayerESP(plr)
     end
 end
 
-for _, p in ipairs(Players:GetPlayers()) do
-    if p ~= LocalPlayer then esp6_func(p) end
-end
-Players.PlayerAdded:Connect(esp6_func)
 Players.PlayerRemoving:Connect(removePlayerESP)
 
 RunService.Heartbeat:Connect(function()
@@ -2930,7 +3017,7 @@ RunService.Heartbeat:Connect(function()
     for plr, outline in pairs(ESPState.outlineObjects) do
         if plr and plr.Character then
             local isKiller = (GetPlayerRole(plr) == "KILLER")
-            local showOutline = isKiller and Settings.killerShowOutline or Settings.survivorShowOutline
+            local showOutline = isKiller and (Settings.killerShowOutline and ESPFlags.KillerChams) or (Settings.survivorShowOutline and ESPFlags.SurvivorChams)
             local outlineOnly = isKiller and Settings.killerOutlineOnly or Settings.survivorOutlineOnly
             local col = isKiller and Settings.killerColor or Settings.survivorColor
 
@@ -3263,7 +3350,6 @@ local CrosshairDrawings = {}
 local crosshairCreated = false
 local lastCrosshairStyle = CrosshairConfig.Style
 
--- OPTIMIZED: Throttle map object / heavy ESP updates inside Heartbeat using a timer counter to save performance
 local espUpdateTick = 0
 
 RunService.Heartbeat:Connect(function()
@@ -3284,7 +3370,6 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- Throttled map ESP update (runs every ~0.2s instead of every single frame to prevent severe lag)
     espUpdateTick = espUpdateTick + 1
     if espUpdateTick >= 12 then
         espUpdateTick = 0
@@ -4095,6 +4180,73 @@ CheckTab:Button({ Title = "Reset to Original Skin", Callback = function()
     end
 end })
 
+-- ==========================================
+-- UPDATE TAB (FAST HEAL SYSTEM - INSTANT SELF-HEAL)
+-- ==========================================
+UpdateTab:Section({ Title = "Rapid Healing System", Icon = "briefcase-medical" })
+
+_G.FastHealSelf = false
+
+UpdateTab:Toggle({
+    Title = "Fast Heal (Instant Self-Heal)",
+    Default = false,
+    Callback = function(v)
+        _G.FastHealSelf = v
+        if v then
+            WindUI:Notify({ Title = "Fast Heal", Content = "Fast Heal Instan Diaktifkan!", Duration = 2 })
+        end
+    end
+})
+
+-- Task background untuk memicu seluruh 10 RemoteEvent healing khusus untuk diri sendiri secara instan
+task.spawn(function()
+    while true do
+        task.wait(0.2)
+        if _G.FastHealSelf then
+            pcall(function()
+                local healingRemotes = ReplicatedStorage:FindFirstChild("Remotes") 
+                    and ReplicatedStorage.Remotes:FindFirstChild("Healing")
+                
+                local char = Player.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+                
+                if healingRemotes and hrp and hum then
+                    if hum.Health < hum.MaxHealth then
+                        local displayBlood = healingRemotes:FindFirstChild("DisplayBlood")
+                        local healAnim = healingRemotes:FindFirstChild("HealAnim")
+                        local healAnimRec = healingRemotes:FindFirstChild("HealAnimRec")
+                        local healEvent = healingRemotes:FindFirstChild("HealEvent")
+                        local healdone = healingRemotes:FindFirstChild("Healdone")
+                        local scEvent = healingRemotes:FindFirstChild("SkillCheckEvent")
+                        local scFail = healingRemotes:FindFirstChild("SkillCheckFailEvent")
+                        local scResult = healingRemotes:FindFirstChild("SkillCheckResultEvent")
+                        local scValid = healingRemotes:FindFirstChild("Skillcheckvalidated")
+
+                        if displayBlood and displayBlood:IsA("RemoteEvent") then displayBlood:FireServer(hrp) end
+                        if healAnim and healAnim:IsA("RemoteEvent") then healAnim:FireServer(hrp, true) end
+                        if healAnimRec and healAnimRec:IsA("RemoteEvent") then healAnimRec:FireServer(hrp, true) end
+
+                        if scEvent and scEvent:IsA("RemoteEvent") then scEvent:FireServer() end
+                        if scValid and scValid:IsA("RemoteEvent") then scValid:FireServer(true) end
+                        if scResult and scResult:IsA("RemoteEvent") then scResult:FireServer("success", 1) end
+
+                        if healEvent and healEvent:IsA("RemoteEvent") then healEvent:FireServer(hrp, true) end
+                        if healdone and healdone:IsA("RemoteEvent") then healdone:FireServer(hrp) end
+
+                        char:SetAttribute("IsDowned", false)
+                        char:SetAttribute("NeedsHelp", false)
+                        char:SetAttribute("IsHealing", false)
+                        char:SetAttribute("HealingProgress", 100)
+                        
+                        hum.Health = hum.MaxHealth
+                    end
+                end
+            end)
+        end
+    end
+end)
+
 -- CONFIGURATION SYSTEM
 CheckTab:Section({ Title = "Configuration / UI Settings" })
 
@@ -4452,9 +4604,9 @@ pcall(function()
     if Remotes then
         local Messages = Remotes:WaitForChild("Messages", 5)
         if Messages then
-            local MapInfoEvent = Messages:WaitForChild("Mapinfo", 5)
-            if MapInfoEvent then
-                MapInfoEvent.OnClientEvent:Connect(function(mapName)
+            local MapInfoError = Messages:WaitForChild("Mapinfo", 5)
+            if MapInfoError then
+                MapInfoError.OnClientEvent:Connect(function(mapName)
                     if mapName and type(mapName) == "string" then
                         currentMapStr = string.upper(mapName)
                         local lowerName = mapName:lower()
