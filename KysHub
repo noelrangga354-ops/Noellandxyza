@@ -530,6 +530,7 @@ getgenv().VD_UpdateCrosshair = VD_UpdateCrosshair
 local VD_DefaultOffFlags = {
     "AutoSkillcheck",
     "HideSkillUI",
+    "AutoGen_Enabled",
     "Fullbright",
     "Speed",
     "Jump",
@@ -698,6 +699,7 @@ end
 
 local VD_To_Flag = {
     InfiniteJump = "Infinite Jump",
+    AutoGen_Enabled = "Bypass Generator",
     KILLER_AntiBlind = "Anti Blind (Flashlight)",
     Fullbright = "Fullbright (lighting preset)",
     AIM_VisCheck = "Visibility Check",
@@ -4868,6 +4870,209 @@ function setGenBypass(v)
     GB_UpdateButton()
 end
 
+-- =====================================================
+-- BYPASS GENERATOR (NEW) - Auto Repair Semua Generator
+-- =====================================================
+local AutoGenData = {
+    Enabled = false,
+    UI = nil,
+    Button = nil,
+    Dragging = false,
+    DragLocked = false,
+    DragStart = nil,
+    DragStartPos = nil,
+}
+
+function VD_UpdateAutoGenButton()
+    if not AutoGenData.Button then return end
+    local lbl = AutoGenData.Button:FindFirstChildOfClass("TextLabel")
+    if lbl then
+        if AutoGenData.Enabled then
+            lbl.Text = "BYPASS\nGEN: ON"
+        else
+            lbl.Text = "BYPASS\nGEN: OFF"
+        end
+    end
+end
+
+function VD_CreateAutoGenButton()
+    local parent = GetSafeGuiParent()
+    if not parent then return end
+
+    if AutoGenData.UI and AutoGenData.UI.Parent then
+        AutoGenData.UI:Destroy()
+    end
+
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "KysHub_AutoGenButton"
+    sg.ResetOnSpawn = false
+    sg.IgnoreGuiInset = true
+    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    sg.DisplayOrder = 999997
+    sg.Parent = parent
+
+    -- ===== FAB Style sama persis dengan Boost Gen Bypass =====
+    local btn = Instance.new("ImageButton")
+    btn.Name = "AutoGenButton"
+    btn.Size = UDim2.new(0, 60, 0, 60)
+    btn.Position = UDim2.new(0.88, 0, 0.65, 0)
+    btn.AnchorPoint = Vector2.new(0.5, 0.5)
+    btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    btn.BackgroundTransparency = 0.15
+    btn.AutoButtonColor = true
+    btn.Visible = false
+    btn.ZIndex = 10
+    btn.Parent = sg
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
+
+    local s = Instance.new("UIStroke", btn)
+    s.Color = Color3.fromRGB(255, 255, 255)
+    s.Thickness = 2
+    s.Transparency = 0.2
+
+    local lbl = Instance.new("TextLabel", btn)
+    lbl.Size = UDim2.new(1, 0, 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = "BYPASS\nGEN"
+    lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+    lbl.TextScaled = true
+    lbl.Font = Enum.Font.GothamBlack
+    lbl.ZIndex = 11
+
+    -- ===== SHINE ANIMATION (sama seperti Boost Gen Bypass) =====
+    local function applyShine(obj, baseColor)
+        local grad = Instance.new("UIGradient", obj)
+        grad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, baseColor),
+            ColorSequenceKeypoint.new(0.4, baseColor),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+            ColorSequenceKeypoint.new(0.6, baseColor),
+            ColorSequenceKeypoint.new(1, baseColor)
+        })
+        grad.Rotation = 45
+        grad.Offset = Vector2.new(-1, -1)
+
+        task.spawn(function()
+            local TweenService = game:GetService("TweenService")
+            local ti = TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1)
+            local tw = TweenService:Create(grad, ti, { Offset = Vector2.new(1, 1) })
+            tw:Play()
+        end)
+    end
+
+    applyShine(btn, Color3.fromRGB(20, 0, 30))
+    applyShine(lbl, Color3.fromRGB(255, 0, 255))
+    applyShine(s, Color3.fromRGB(255, 0, 255))
+    -- ==========================================================
+
+    -- Drag logic
+    btn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            if AutoGenData.DragLocked then return end
+            AutoGenData.Dragging = true
+            AutoGenData.DragStart = input.Position
+            AutoGenData.DragStartPos = btn.Position
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if not AutoGenData.Dragging or AutoGenData.DragLocked then return end
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+            local delta = input.Position - AutoGenData.DragStart
+            btn.Position = UDim2.new(
+                AutoGenData.DragStartPos.X.Scale,
+                AutoGenData.DragStartPos.X.Offset + delta.X,
+                AutoGenData.DragStartPos.Y.Scale,
+                AutoGenData.DragStartPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    btn.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            AutoGenData.Dragging = false
+        end
+    end)
+
+    -- Klik = toggle ON/OFF (tanpa ganti warna biar konsisten shine-nya)
+    btn.MouseButton1Click:Connect(function()
+        AutoGenData.Enabled = not AutoGenData.Enabled
+        VD_UpdateAutoGenButton()
+        pcall(VD_Notify, "Bypass Generator",
+            AutoGenData.Enabled and "Dengan ini kamu bisa auto escape ketika di hook" or "Nonaktif",
+            2)
+    end)
+
+    AutoGenData.UI = sg
+    AutoGenData.Button = btn
+    VD_UpdateAutoGenButton()
+end
+
+function VD_SetAutoGenVisible(state)
+    AutoGenData.Visible = state and true or false
+    if state then
+        VD_CreateAutoGenButton()
+        if AutoGenData.Button then
+            AutoGenData.Button.Visible = true
+        end
+    else
+        AutoGenData.Enabled = false
+        if AutoGenData.UI then
+            pcall(function() AutoGenData.UI:Destroy() end)
+            AutoGenData.UI = nil
+            AutoGenData.Button = nil
+        end
+    end
+end
+getgenv().VD_SetAutoGenVisible = VD_SetAutoGenVisible
+
+-- Loop utama: kirim RepairEvent ke semua GeneratorPoint2
+task.spawn(function()
+    while getgenv().VD and not getgenv().VD.Destroyed do
+        if AutoGenData.Enabled then
+            pcall(function()
+                local repairRemote = ReplicatedStorage:FindFirstChild("Remotes")
+                    and ReplicatedStorage.Remotes:FindFirstChild("Generator")
+                    and ReplicatedStorage.Remotes.Generator:FindFirstChild("RepairEvent")
+
+                if repairRemote then
+                    local map = workspace:FindFirstChild("Map") or workspace
+
+                    for _, obj in ipairs(map:GetDescendants()) do
+                        if obj:IsA("BasePart") and obj.Name == "GeneratorPoint2" then
+                            repairRemote:FireServer(obj, false)
+                        elseif obj:IsA("Model") and obj.Name:lower():find("generator") then
+                            local pt2 = obj:FindFirstChild("GeneratorPoint2")
+                            if pt2 and pt2:IsA("BasePart") then
+                                repairRemote:FireServer(pt2, false)
+                            else
+                                repairRemote:FireServer(obj, false)
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.2)
+    end
+end)
+
+-- Recreate button saat respawn
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    if AutoGenData.Visible then
+        pcall(VD_CreateAutoGenButton)
+        if AutoGenData.Button then AutoGenData.Button.Visible = true end
+    end
+end)
+
+-- =====================================================
+-- END BYPASS GENERATOR (NEW)
+-- =====================================================
+
 function setAutoCrouch(v) VD.AutoCrouch = v end
 
 -- =====================================================
@@ -7346,6 +7551,19 @@ do -- Generator Tab
         end
         setGenBypass(v)
     end })
+    genAuto:AddToggle({
+    Default = false,
+    Name = "Bypass Generator (Auto Repair)",
+    Locked = false,
+    TextLocked = "Premium Required",
+    Flag = "Bypass Generator",
+    Callback = function(v)
+        -- Karena kamu sudah pakai KillPremium, baris "if v and false" dihapus agar fitur bisa dipakai
+        if getgenv().VD_SetAutoGenVisible then
+            getgenv().VD_SetAutoGenVisible(v)
+        end
+    end
+})
     genAuto:AddDropdown({
         Name = "Skillcheck Mode",
         Flag = "Skillcheck Mode",
