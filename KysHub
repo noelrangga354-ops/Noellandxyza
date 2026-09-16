@@ -255,6 +255,113 @@ end
 local MobileESP = {}
 
 -- =====================================================
+-- [BOLONG-HUB] WINDOW ESP SYSTEM (BoxHandleAdornment)
+-- =====================================================
+getgenv().KYS_WindowESPObjects = {}   -- [BasePart] = BoxHandleAdornment
+
+function KYS_CreateWindowAdornment(part)
+    if not part or not part.Parent or getgenv().KYS_WindowESPObjects[part] then
+        return
+    end
+
+    local color = VD.ESP_WindowColor or Color3.fromRGB(255, 255, 255)
+
+    local adorn = Instance.new("BoxHandleAdornment")
+    adorn.Name           = "KYS_WindowESP_Box"
+    adorn.Adornee        = part
+    adorn.Color3         = color
+    adorn.Transparency   = 0.3
+    adorn.Size           = part.Size
+    adorn.AlwaysOnTop    = true
+    adorn.ZIndex         = 10
+    adorn.Parent         = workspace   -- atau GetSafeChamsFolder() kalau mau di CoreGui
+
+    getgenv().KYS_WindowESPObjects[part] = adorn
+end
+
+function KYS_RemoveWindowAdornment(part)
+    local adorn = getgenv().KYS_WindowESPObjects[part]
+    if adorn then
+        pcall(function() adorn:Destroy() end)
+        getgenv().KYS_WindowESPObjects[part] = nil
+    end
+end
+
+-- Deteksi window part dari sebuah Instance
+function KYS_ResolveWindowPart(inst)
+    if typeof(inst) ~= "Instance" then return nil end
+
+    local lname = string.lower(inst.Name)
+
+    -- Model bernama "Window" -> cari Bottom / PrimaryPart
+    if lname == "window" and inst:IsA("Model") then
+        local bottom = inst:FindFirstChild("Bottom", true)
+        if bottom and bottom:IsA("BasePart") then
+            return bottom
+        end
+        return inst.PrimaryPart
+    end
+
+    -- Part bernama "Bottom" yang parent-nya "window"
+    if lname == "bottom" and inst:IsA("BasePart") then
+        if inst.Parent and string.lower(inst.Parent.Name) == "window" then
+            return inst
+        end
+    end
+
+    return nil
+end
+
+-- Handler DescendantAdded
+function KYS_HandleWindowAdded(inst)
+    local winPart = KYS_ResolveWindowPart(inst)
+    if winPart then
+        if VD.ESP_WindowEnabled and not getgenv().KYS_WindowESPObjects[winPart] then
+            KYS_CreateWindowAdornment(winPart)
+        end
+    end
+end
+
+-- Handler DescendantRemoving
+function KYS_HandleWindowRemoved(inst)
+    local winPart = KYS_ResolveWindowPart(inst) or inst
+    if getgenv().KYS_WindowESPObjects[winPart] then
+        KYS_RemoveWindowAdornment(winPart)
+    end
+end
+
+-- Scan semua window yang ada saat ini
+function KYS_RefreshAllWindowESP()
+    -- Bersihkan yang sudah hilang
+    for part, adorn in pairs(getgenv().KYS_WindowESPObjects) do
+        if not part or not part.Parent then
+            KYS_RemoveWindowAdornment(part)
+        end
+    end
+
+    -- Kalau mode disable, hapus semua
+    if not VD.ESP_WindowEnabled then
+        for part in pairs(getgenv().KYS_WindowESPObjects) do
+            KYS_RemoveWindowAdornment(part)
+        end
+        return
+    end
+
+    -- Scan workspace
+    for _, inst in ipairs(workspace:GetDescendants()) do
+        KYS_HandleWindowAdded(inst)
+    end
+end
+
+-- Setup listener (hanya sekali)
+if not getgenv().KYS_WindowESP_Connected then
+    getgenv().KYS_WindowESP_Connected = true
+
+    workspace.DescendantAdded:Connect(KYS_HandleWindowAdded)
+    workspace.DescendantRemoving:Connect(KYS_HandleWindowRemoved)
+end
+
+-- =====================================================
 -- UTILITY FUNCTIONS
 -- =====================================================
 function clamp(v, min, max)
@@ -347,6 +454,8 @@ getgenv().VD = getgenv().VD or {
     SPEED_Value           = 32,
     SPEED_Method          = "Attribute",
     -- Visual extras
+    ESP_WindowEnabled     = false,
+    ESP_WindowColor       = Color3.fromRGB(255, 255, 255),
     NO_Fog                = false,
     NoCutscene            = false,
     CAM_FOVEnabled        = false,
@@ -585,6 +694,7 @@ local VD_DefaultOffFlags = {
     "BEAT_Survivor",
     "BEAT_Killer",
     "ESP_ClosestHook",
+    "ESP_WindowEnabled",
     "VIS_SpectatorCounter",
     "VIS_KillerPerks",
     "VIS_PredictMap",
@@ -2065,7 +2175,6 @@ do
             KYS_ESPState.GeneratorESP or
             KYS_ESPState.HookESP or
             KYS_ESPState.GateESP or
-            KYS_ESPState.WindowESP or
             KYS_ESPState.PalletESP or
             KYS_ESPState.SCPZombieESP
         )
@@ -2075,7 +2184,6 @@ do
         if cat == "Generator" then return KYS_ESPState.GeneratorESP, KYS_ESPState.GeneratorColor end
         if cat == "Hook" then return KYS_ESPState.HookESP, KYS_ESPState.HookColor end
         if cat == "Gate" then return KYS_ESPState.GateESP, KYS_ESPState.GateColor end
-        if cat == "Window" then return KYS_ESPState.WindowESP, KYS_ESPState.WindowColor end
         if cat == "Palletwrong" then return KYS_ESPState.PalletESP, KYS_ESPState.PalletColor end
         if cat == "SCPZombie" then return KYS_ESPState.SCPZombieESP, KYS_ESPState.SCPZombieColor end
         return false, Color3.new(1, 1, 1)
@@ -2386,7 +2494,7 @@ do
         worldSection:AddDropdown({
             Name = "Select World Objects",
             Flag = "KYS Select World Objects",
-            Values = { "Generators", "Hooks", "Gates", "Windows", "Pallets", "SCP / Zombie" },
+            Values = { "Generators", "Hooks", "Gates", "Pallets", "SCP / Zombie" },
             Multi = true,
             AllowNone = true,
             Default = {},
@@ -2394,7 +2502,6 @@ do
                 KYS_ESPState.GeneratorESP = KYS_Selected(selected, "Generators")
                 KYS_ESPState.HookESP = KYS_Selected(selected, "Hooks")
                 KYS_ESPState.GateESP = KYS_Selected(selected, "Gates")
-                KYS_ESPState.WindowESP = KYS_Selected(selected, "Windows")
                 KYS_ESPState.PalletESP = KYS_Selected(selected, "Pallets")
                 KYS_ESPState.SCPZombieESP = KYS_Selected(selected, "SCP / Zombie")
 
@@ -2406,6 +2513,33 @@ do
                 end
             end,
         })
+        
+        worldSection:AddToggle({
+    Name = "ESP Window",
+    Flag = "KYS ESP Window",
+    Default = false,
+    Callback = function(state)
+        VD.ESP_WindowEnabled = state
+        pcall(KYS_RefreshAllWindowESP)
+    end,
+})
+
+worldSection:AddColorPicker({
+    Name = "Window Color",
+    Flag = "KYS Window Color",
+    Default = Color3.fromRGB(255, 255, 255),
+    Callback = function(color)
+        VD.ESP_WindowColor = color
+        -- update warna semua adornment yang aktif
+        for _, adorn in pairs(getgenv().KYS_WindowESPObjects) do
+            if adorn and adorn.Parent then
+                pcall(function()
+                    adorn.Color3 = color
+                end)
+            end
+        end
+    end,
+})
 
         worldSection:AddToggle({
             Name = "World Nametags",
@@ -11958,24 +12092,48 @@ function StartKystKiller()
     if getgenv().KYS_KystKillerRunning then return end
     getgenv().KYS_KystKillerRunning = true
     SetupKystKillerIndicator()
+
     task.spawn(function()
         local _genv = getgenv()
         while _genv.VD and _genv.VD.VIS_KystKiller and _genv.KYS_KystKillerRunning do
-            local playersList = Players:GetPlayers()
-            table.sort(playersList, function(a, b)
-                local aA = a:GetAttribute("AllowKiller") or false
-                local bB = b:GetAttribute("AllowKiller") or false
-                if aA ~= bB then return aA == true end
-                return (a:GetAttribute("KillerChance") or 0) > (b:GetAttribute("KillerChance") or 0)
+            local ok, err = pcall(function()
+                local playersList = Players:GetPlayers()
+                if #playersList == 0 then
+                    KYS_SetMainInfoPanelText("KystKiller", "Kyst Killer Display", "No Players")
+                    return
+                end
+
+                -- Sorting pakai AllowKiller + KillerChance biar akurat
+                table.sort(playersList, function(a, b)
+                    local aA = a:GetAttribute("AllowKiller") or false
+                    local bB = b:GetAttribute("AllowKiller") or false
+                    if aA ~= bB then return aA == true end
+                    return (a:GetAttribute("KillerChance") or 0) > (b:GetAttribute("KillerChance") or 0)
+                end)
+
+                local nk = playersList[1]
+                if nk then
+                    local username     = (nk == LocalPlayer) and "YOU" or nk.Name
+                    local killerUsed   = KYS_GetKillerUsedName(nk)
+                    local killerLevel  = KYS_GetPlayerLevel(nk)
+
+                    -- Format 4 baris: Username, KillerName, Level
+                    local infoText = string.format(
+                        "Username: %s\nKiller: %s\nLevel: %s",
+                        username, killerUsed, killerLevel
+                    )
+
+                    KYS_SetMainInfoPanelText("KystKiller", "Kyst Killer Display", infoText)
+                else
+                    KYS_SetMainInfoPanelText("KystKiller", "Kyst Killer Display", "Kyst Killer: None")
+                end
             end)
-            
-            local nk = playersList[1]
-            if nk then
-                KYS_SetMainInfoPanelText("KystKiller", "Kyst Killer Display", "Kyst Killer: " .. (nk == LocalPlayer and "YOU" or nk.DisplayName or nk.Name))
-            else
-                KYS_SetMainInfoPanelText("KystKiller", "Kyst Killer Display", "Kyst Killer: None")
+
+            if not ok then
+                KYS_SetMainInfoPanelText("KystKiller", "Kyst Killer Display", "Error: " .. tostring(err))
             end
-            task.wait(2)
+
+            task.wait(1.5)
         end
     end)
 end
@@ -12101,240 +12259,276 @@ end
 
 -- =====================================================
 -- KILLER PERKS DISPLAY
--- Reads killer perk objects directly from Workspace character models.
 -- =====================================================
 do -- begin Killer Perks scope
-if getgenv().KYS_KillerPerksGui then
-    pcall(function() getgenv().KYS_KillerPerksGui:Destroy() end)
-end
-getgenv().KYS_KillerPerksGui = nil
 
-local KYS_KillerPerksCollapsed = false
-local KYS_KillerPerksLocked = false
-getgenv().KYS_KillerPerksRunning = false
+    getgenv().KYS_KillerPerksRunning = false
 
-local KYS_KillerPerkNames = {
-    KystInLine = "Kyst in Line",
-    ["Kyst in Line"] = "Kyst in Line",
-    EchoLocation = "Echo Location",
-    ["Echo Location"] = "Echo Location",
-    KingsScourge = "King's Scourge",
-    KingScourge = "King's Scourge",
-    ["King's Scourge"] = "King's Scourge",
-}
+    -- ============ HELPER FUNCTIONS (URUTAN PENTING) ============
 
-function KYS_EscapeRichText(text)
-    text = tostring(text or "")
-    text = text:gsub("&", "&amp;")
-    text = text:gsub("<", "&lt;")
-    text = text:gsub(">", "&gt;")
-    return text
-end
-
-local function KYS_FormatPerkName(name)
-    name = tostring(name or "")
-    if KYS_KillerPerkNames[name] then return KYS_KillerPerkNames[name] end
-
-    local clean = name:gsub("_", " "):gsub("-", " ")
-    clean = clean:gsub("(%l)(%u)", "%1 %2")
-    clean = clean:gsub("(%a)(%d)", "%1 %2")
-    clean = clean:gsub("(%d)(%a)", "%1 %2")
-    clean = clean:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
-    return clean ~= "" and clean or "Unknown Perk"
-end
-
-local function KYS_GetKillerPlayer()
-    for _, player in ipairs(Players:GetPlayers()) do
-        local teamName = player.Team and player.Team.Name
-        if teamName and teamName:lower():find("killer") then
-            return player
-        end
+    function KYS_EscapeRichText(text)
+        text = tostring(text or "")
+        text = text:gsub("&", "&amp;")
+        text = text:gsub("<", "&lt;")
+        text = text:gsub(">", "&gt;")
+        return text
     end
-    return nil
-end
 
-local function KYS_AddWorkspacePerk(result, seen, rawName, displayName, level)
-    if not rawName then return end
-    rawName = tostring(rawName)
-    if rawName == "" or rawName == "nil" then return end
-    if rawName:lower():find("template") then return end
-    if seen[rawName] then return end
+    function KYS_GetPlayerLevel(player)
+        if not player then return "?" end
+        local lvl = player:GetAttribute("Level")
+            or player:GetAttribute("level")
+            or player:GetAttribute("LVL")
+        if lvl ~= nil then return tostring(lvl) end
 
-    seen[rawName] = true
-    table.insert(result, {
-        Raw = rawName,
-        Name = displayName and tostring(displayName) or KYS_FormatPerkName(rawName),
-        Level = level and tostring(level) or nil,
-    })
-end
+        local ls = player:FindFirstChild("leaderstats")
+        if ls then
+            local lvObj = ls:FindFirstChild("Level") or ls:FindFirstChild("LVL")
+            if lvObj then return tostring(lvObj.Value) end
+        end
+        return "?"
+    end
 
-local function KYS_IsPerkContainer(inst)
-    local name = inst.Name:lower()
-    return name == "perks"
-        or name == "killerperks"
-        or name == "equippedperks"
-        or name == "equippedkillerperks"
-        or name:find("perkfolder") ~= nil
-        or name:find("perklist") ~= nil
-end
+    function KYS_GetKillerUsedName(player)
+        if not player then return "Unknown" end
 
-local function KYS_ParseWorkspacePerkName(name)
-    name = tostring(name or "")
-    local perkName, level = name:match("^(.+)%s+(%d+)$")
-    if not perkName then return nil end
+        local selected = player:GetAttribute("SelectedKiller")
+        if selected and type(selected) == "string" and selected ~= "" then
+            return selected
+        end
 
-    perkName = perkName:gsub("^%s+", ""):gsub("%s+$", "")
-    if perkName == "" then return nil end
-
-    local lower = perkName:lower()
-    local excluded = {
-        head = true,
-        torso = true,
-        humanoid = true,
-        ["left arm"] = true,
-        ["right arm"] = true,
-        ["left leg"] = true,
-        ["right leg"] = true,
-        ["humanoidrootpart"] = true,
-    }
-    if excluded[lower] then return nil end
-
-    return perkName, level
-end
-
-local function KYS_ReadPerksFromWorkspace(killer)
-    if not killer then return {} end
-
-    local char = killer.Character or Workspace:FindFirstChild(killer.Name) or Workspace:FindFirstChild(killer.DisplayName)
-    if not char then return {} end
-
-    local result = {}
-    local seen = {}
-
-    local function scanAttributes(inst)
-        if not inst.GetAttributes then return end
-        local attrs = inst:GetAttributes()
-        for key, value in pairs(attrs) do
-            local lowerKey = tostring(key):lower()
-            if lowerKey:find("perk") then
-                if type(value) == "string" then
-                    KYS_AddWorkspacePerk(result, seen, value)
-                elseif value == true then
-                    KYS_AddWorkspacePerk(result, seen, key)
-                elseif type(value) == "number" and lowerKey:find("level") then
-                    local baseName = tostring(key):gsub("[Ll]evel", ""):gsub("[Pp]erk", "")
-                    if baseName ~= "" then
-                        KYS_AddWorkspacePerk(result, seen, baseName, nil, value)
-                    end
+        if player.Character then
+            local values = player.Character:FindFirstChild("Values")
+            if values then
+                local kn = values:FindFirstChild("KillerName")
+                if kn and kn:IsA("StringValue") and kn.Value ~= "" then
+                    return kn.Value
                 end
             end
         end
+
+        local alt = player:GetAttribute("KillerName")
+        if alt and type(alt) == "string" and alt ~= "" then
+            return alt
+        end
+
+        return "Unknown"
     end
 
-    local function readValueObject(inst)
-        if inst:IsA("StringValue") then
-            return inst.Value
-        elseif inst:IsA("IntValue") or inst:IsA("NumberValue") then
-            return inst.Name, inst.Value
-        elseif inst:IsA("BoolValue") and inst.Value == true then
-            return inst.Name
+    local KYS_KillerPerkNames = {
+        KystInLine = "Kyst in Line",
+        ["Kyst in Line"] = "Kyst in Line",
+        EchoLocation = "Echo Location",
+        ["Echo Location"] = "Echo Location",
+        KingsScourge = "King's Scourge",
+        KingScourge = "King's Scourge",
+        ["King's Scourge"] = "King's Scourge",
+    }
+
+    local function KYS_FormatPerkName(name)
+        name = tostring(name or "")
+        if KYS_KillerPerkNames[name] then return KYS_KillerPerkNames[name] end
+
+        local clean = name:gsub("_", " "):gsub("-", " ")
+        clean = clean:gsub("(%l)(%u)", "%1 %2")
+        clean = clean:gsub("(%a)(%d)", "%1 %2")
+        clean = clean:gsub("(%d)(%a)", "%1 %2")
+        clean = clean:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+        return clean ~= "" and clean or "Unknown Perk"
+    end
+
+    local function KYS_GetKillerPlayer()
+        for _, player in ipairs(Players:GetPlayers()) do
+            local teamName = player.Team and player.Team.Name
+            if teamName and teamName:lower():find("killer") then
+                return player
+            end
         end
         return nil
     end
 
-    scanAttributes(char)
+    local function KYS_AddWorkspacePerk(result, seen, rawName, displayName, level)
+        if not rawName then return end
+        rawName = tostring(rawName)
+        if rawName == "" or rawName == "nil" then return end
+        if rawName:lower():find("template") then return end
+        if seen[rawName] then return end
 
-    for _, child in ipairs(char:GetChildren()) do
-        local perkName, level = KYS_ParseWorkspacePerkName(child.Name)
-        if perkName then
-            KYS_AddWorkspacePerk(result, seen, child.Name, perkName, level)
-        end
+        seen[rawName] = true
+        table.insert(result, {
+            Raw = rawName,
+            Name = displayName and tostring(displayName) or KYS_FormatPerkName(rawName),
+            Level = level and tostring(level) or nil,
+        })
     end
 
-    for _, inst in ipairs(char:GetDescendants()) do
-        scanAttributes(inst)
+    local function KYS_IsPerkContainer(inst)
+        local name = inst.Name:lower()
+        return name == "perks"
+            or name == "killerperks"
+            or name == "equippedperks"
+            or name == "equippedkillerperks"
+            or name:find("perkfolder") ~= nil
+            or name:find("perklist") ~= nil
+    end
 
-        if KYS_IsPerkContainer(inst) then
-            for _, child in ipairs(inst:GetChildren()) do
-                local value, level = readValueObject(child)
-                KYS_AddWorkspacePerk(result, seen, value or child.Name, nil, level)
+    local function KYS_ParseWorkspacePerkName(name)
+        name = tostring(name or "")
+        local perkName, level = name:match("^(.+)%s+(%d+)$")
+        if not perkName then return nil end
+
+        perkName = perkName:gsub("^%s+", ""):gsub("%s+$", "")
+        if perkName == "" then return nil end
+
+        local lower = perkName:lower()
+        local excluded = {
+            head = true, torso = true, humanoid = true,
+            ["left arm"] = true, ["right arm"] = true,
+            ["left leg"] = true, ["right leg"] = true,
+            ["humanoidrootpart"] = true,
+        }
+        if excluded[lower] then return nil end
+
+        return perkName, level
+    end
+
+    local function KYS_ReadPerksFromWorkspace(killer)
+        if not killer then return {} end
+
+        local char = killer.Character
+            or Workspace:FindFirstChild(killer.Name)
+            or Workspace:FindFirstChild(killer.DisplayName)
+        if not char then return {} end
+
+        local result = {}
+        local seen = {}
+
+        local function scanAttributes(inst)
+            if not inst.GetAttributes then return end
+            local attrs = inst:GetAttributes()
+            for key, value in pairs(attrs) do
+                local lowerKey = tostring(key):lower()
+                if lowerKey:find("perk") then
+                    if type(value) == "string" then
+                        KYS_AddWorkspacePerk(result, seen, value)
+                    elseif value == true then
+                        KYS_AddWorkspacePerk(result, seen, key)
+                    elseif type(value) == "number" and lowerKey:find("level") then
+                        local baseName = tostring(key):gsub("[Ll]evel", ""):gsub("[Pp]erk", "")
+                        if baseName ~= "" then
+                            KYS_AddWorkspacePerk(result, seen, baseName, nil, value)
+                        end
+                    end
+                end
             end
+        end
+
+        local function readValueObject(inst)
+            if inst:IsA("StringValue") then
+                return inst.Value
+            elseif inst:IsA("IntValue") or inst:IsA("NumberValue") then
+                return inst.Name, inst.Value
+            elseif inst:IsA("BoolValue") and inst.Value == true then
+                return inst.Name
+            end
+            return nil
+        end
+
+        scanAttributes(char)
+
+        for _, child in ipairs(char:GetChildren()) do
+            local perkName, level = KYS_ParseWorkspacePerkName(child.Name)
+            if perkName then
+                KYS_AddWorkspacePerk(result, seen, child.Name, perkName, level)
+            end
+        end
+
+        for _, inst in ipairs(char:GetDescendants()) do
+            scanAttributes(inst)
+
+            if KYS_IsPerkContainer(inst) then
+                for _, child in ipairs(inst:GetChildren()) do
+                    local value, level = readValueObject(child)
+                    KYS_AddWorkspacePerk(result, seen, value or child.Name, nil, level)
+                end
+            else
+                local lowerName = inst.Name:lower()
+                if lowerName:find("perk") then
+                    local value, level = readValueObject(inst)
+                    KYS_AddWorkspacePerk(result, seen, value or inst.Name, nil, level)
+                end
+            end
+        end
+
+        table.sort(result, function(a, b) return tostring(a.Name) < tostring(b.Name) end)
+        return result
+    end
+
+    -- ============ KYS_BuildKillerPerksText (VERSI BARU) ============
+    local function KYS_BuildKillerPerksText()
+        local killer = KYS_GetKillerPlayer()
+        local perks = KYS_ReadPerksFromWorkspace(killer)
+
+        if #perks == 0 then
+            for _, player in ipairs(Players:GetPlayers()) do
+                local candidatePerks = KYS_ReadPerksFromWorkspace(player)
+                if #candidatePerks > 0 then
+                    killer = player
+                    perks = candidatePerks
+                    break
+                end
+            end
+        end
+
+        local username = killer and killer.Name or "Unknown"
+        local level = killer and KYS_GetPlayerLevel(killer) or "?"
+
+        local headerText = string.format(
+            'Killer Perks [<font color="rgb(255,80,80)">%s | Lv. %s</font>]',
+            KYS_EscapeRichText(username),
+            KYS_EscapeRichText(level)
+        )
+
+        local lines = { headerText }
+
+        if #perks == 0 then
+            table.insert(lines, '<font color="rgb(255,204,80)">- Waiting for perk data...</font>')
         else
-            local lowerName = inst.Name:lower()
-            if lowerName:find("perk") then
-                local value, level = readValueObject(inst)
-                KYS_AddWorkspacePerk(result, seen, value or inst.Name, nil, level)
+            for i = 1, math.min(#perks, 4) do
+                local perk = perks[i]
+                local levelText = perk.Level and (" lvl " .. tostring(perk.Level)) or ""
+                table.insert(lines, '<font color="rgb(255,204,80)">- ' .. KYS_EscapeRichText(perk.Name) .. KYS_EscapeRichText(levelText) .. '</font>')
             end
         end
+
+        return table.concat(lines, "\n"), #perks
     end
 
-    table.sort(result, function(a, b) return tostring(a.Name) < tostring(b.Name) end)
-    return result
-end
+    -- ============ SETUP / START / STOP ============
+    local function SetupKillerPerksDisplay()
+        KYS_SetMainInfoPanelText("KillerPerks", "Spectate Killer Perks", "Waiting for perk data...")
+    end
 
-local function KYS_BuildKillerPerksText()
-    local killer = KYS_GetKillerPlayer()
-    local killerName = killer and (killer.DisplayName or killer.Name) or "Unknown"
-    local perks = KYS_ReadPerksFromWorkspace(killer)
+    function StartKillerPerksDisplay()
+        if getgenv().KYS_KillerPerksRunning then return end
+        getgenv().KYS_KillerPerksRunning = true
+        SetupKillerPerksDisplay()
 
-    if #perks == 0 then
-        for _, player in ipairs(Players:GetPlayers()) do
-            local candidatePerks = KYS_ReadPerksFromWorkspace(player)
-            if #candidatePerks > 0 then
-                killer = player
-                killerName = player.DisplayName or player.Name
-                perks = candidatePerks
-                break
+        task.spawn(function()
+            local _genv = getgenv()
+            while _genv.VD and _genv.VD.VIS_KillerPerks and _genv.KYS_KillerPerksRunning do
+                local text = KYS_BuildKillerPerksText()
+                KYS_SetMainInfoPanelText("KillerPerks", "Spectate Killer Perks", text)
+                task.wait(1)
             end
-        end
+        end)
     end
 
-    local lines = {
-        'Killer Perks [<font color="rgb(255,80,80)">' .. KYS_EscapeRichText(killerName) .. '</font>]',
-    }
-
-    if #perks == 0 then
-        table.insert(lines, '<font color="rgb(255,204,80)">- Waiting for perk data...</font>')
-    else
-        for i = 1, math.min(#perks, 4) do
-            local perk = perks[i]
-            local levelText = perk.Level and (" lvl " .. tostring(perk.Level)) or ""
-            table.insert(lines, '<font color="rgb(255,204,80)">- ' .. KYS_EscapeRichText(perk.Name) .. KYS_EscapeRichText(levelText) .. '</font>')
-        end
+    function StopKillerPerksDisplay()
+        getgenv().KYS_KillerPerksRunning = false
+        KYS_SetMainInfoPanelText("KillerPerks", "Spectate Killer Perks", "Off")
     end
 
-    return table.concat(lines, "\n"), #perks
-end
-
-local function SetupKillerPerksDisplay()
-    if getgenv().KYS_KillerPerksGui then pcall(function() getgenv().KYS_KillerPerksGui:Destroy() end) end
-    getgenv().KYS_KillerPerksGui = nil
-    KYS_SetMainInfoPanelText("KillerPerks", "Spectate Killer Perks", "Waiting for perk data...")
-end
-
-function StartKillerPerksDisplay()
-    if getgenv().KYS_KillerPerksRunning then return end
-    getgenv().KYS_KillerPerksRunning = true
-    SetupKillerPerksDisplay()
-
-    task.spawn(function()
-        local _genv = getgenv()
-        while _genv.VD and _genv.VD.VIS_KillerPerks and _genv.KYS_KillerPerksRunning do
-            local text = KYS_BuildKillerPerksText()
-            KYS_SetMainInfoPanelText("KillerPerks", "Spectate Killer Perks", text)
-            task.wait(1)
-        end
-    end)
-end
-
-function StopKillerPerksDisplay()
-    getgenv().KYS_KillerPerksRunning = false
-    if getgenv().KYS_KillerPerksGui then
-        pcall(function() getgenv().KYS_KillerPerksGui:Destroy() end)
-        getgenv().KYS_KillerPerksGui = nil
-    end
-    KYS_SetMainInfoPanelText("KillerPerks", "Spectate Killer Perks", "Off")
-end
 end -- end Killer Perks scope
 
 -- =====================================================
@@ -13225,6 +13419,11 @@ RunService.Heartbeat:Connect(function(deltaTime)
     pcall(VD_UpdateRemovePalletwrong)
 end)
 
+ if tick() - (getgenv()._lastWinScan or 0) > 1 then
+    getgenv()._lastWinScan = tick()
+    pcall(KYS_RefreshAllWindowESP)
+end
+
 -- =====================================================
 getgenv().KYS_SyncLoadedFeatures = function()
 
@@ -13413,3 +13612,4 @@ local function KillPremium()
 end
 
 task.spawn(KillPremium)
+
