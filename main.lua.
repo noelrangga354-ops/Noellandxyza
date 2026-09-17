@@ -1,2 +1,20 @@
 -- main.lua
-print("[MyHub] Script loaded")
+-- Loader Obsidian UI Library dari repo sendiri
+local REPO = "https://raw.githubusercontent.com/noelrangga354-ops/Obsidianplus/main/"
+
+local function LoadFile(path)
+    -- Coba ambil dari file lokal executor dulu (cache)
+    if isfile and isfile(path) then
+        return readfile(path)
+    end
+    -- Kalau tidak ada, ambil dari GitHub
+    return game:HttpGet(REPO .. path)
+end
+
+-- Ambil Library.lua dari repo sendiri
+local LibraryCode = LoadFile("Library.lua")
+
+-- Compile & jalankan
+local Library = loadstring(LibraryCode)()
+
+print("[MyHub] Obsidian Library loaded:", typeof(Library))
