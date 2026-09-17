@@ -1,5 +1,11 @@
 -- 8
+
+-- Load Library Fluent (WAJIB)
 local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/src/init.lua"))()
+
+-- Load SaveManager & InterfaceManager (WAJIB)
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/addons/InterfaceManager.lua"))()
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -46,7 +52,8 @@ Theme = "ExtremeReaper",
 MinimizeKey = Enum.KeyCode.RightControl
 })
 
-local icon = loadstring(game:HttpGet("https://raw.githubusercontent.com/x2sxqz/Libwtf/refs/heads/main/Icon.lua"))()
+-- Icon disabled (repo private)
+local icon = loadstring(game:HttpGet("https://raw.githubusercontent.com/noelrangga354-ops/Noellandxyza/main/Icon.lua"))()
 
 --=========================
 -- 🔥Tab
