@@ -1007,7 +1007,7 @@ AutoFarmGroup:AddToggle("ServerHop", {
 
 --- Remote loader URL used by `queue_on_teleport`.
 --- @local
-local LOADER_URL = "https://raw.githubusercontent.com/Rzor731/VD-AUTO-FARM/refs/heads/main/main.lua"
+local LOADER_URL = "https://raw.githubusercontent.com/noelrangga354-ops/Noellandxyza/refs/heads/main/Auto-Farm-vd"
 
 --- Indicates whether the current teleport already has
 --- an auto-execution payload queued.
