@@ -100,6 +100,12 @@ local LastNotifTime = 0
 --- @local
 local ServerHop
 
+--- Griddy Animation setup
+--- @local
+local GriddyAnim = Instance.new("Animation")
+GriddyAnim.AnimationId = "rbxassetid://75586690784894"
+local CurrentGriddyTrack = nil
+
 --- Displays a throttled UI notification.
 ---
 --- Notifications are limited to one every 2.5 seconds
@@ -968,6 +974,58 @@ ServerHop = function()
 	IsHopping = false
 end
 
+--- Handles the Auto Griddy animation state.
+--- Loops the Griddy animation on the player if enabled.
+--- @local
+local function HandleAutoGriddy()
+	if Toggles.AutoGriddy and Toggles.AutoGriddy.Value then
+		local character = LocalPlayer.Character
+		if character then
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			if humanoid and humanoid.Health > 0 then
+				local animator = humanoid:FindFirstChildOfClass("Animator") or humanoid:WaitForChild("Animator", 1)
+				if animator then
+					local isPlaying = false
+					for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+						if track.Animation.AnimationId == GriddyAnim.AnimationId then
+							isPlaying = true
+							CurrentGriddyTrack = track
+							break
+						end
+					end
+					if not isPlaying then
+						CurrentGriddyTrack = animator:LoadAnimation(GriddyAnim)
+						CurrentGriddyTrack.Looped = true
+						CurrentGriddyTrack:Play()
+					end
+				end
+			end
+		end
+	else
+		-- Stop the animation if it's turned off
+		if CurrentGriddyTrack then
+			CurrentGriddyTrack:Stop()
+			CurrentGriddyTrack = nil
+		end
+		
+		-- Double check if there are left over playing tracks
+		local character = LocalPlayer.Character
+		if character then
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				local animator = humanoid:FindFirstChildOfClass("Animator")
+				if animator then
+					for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+						if track.Animation.AnimationId == GriddyAnim.AnimationId then
+							track:Stop()
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
 --- Enables or disables automated survivor farming.
 AutoFarmGroup:AddToggle("EnableAutoFarm", {
 	Text = "Enable Auto Farm",
@@ -1049,6 +1107,18 @@ AutoFarmGroup:AddToggle("AutoExecute", {
 			QueueAutoExec()
 		else
 			AutoExecuteQueued = false
+		end
+	end,
+})
+
+--- Enables or disables automatic Griddy animation.
+AutoFarmGroup:AddToggle("AutoGriddy", {
+	Text = "Auto Griddy",
+	Tooltip = "Automatically loop the Griddy animation",
+	Default = false,
+	Callback = function(v)
+		if not v then
+			pcall(HandleAutoGriddy) -- Segera hentikan animasi saat toggle dimatikan
 		end
 	end,
 })
@@ -1180,6 +1250,7 @@ QueueAutoExec()
 task.spawn(function()
 	while not Library.Unloaded do
 		pcall(BeatGame)
+		pcall(HandleAutoGriddy) -- Handle animasi Griddy setiap detik jika diaktifkan
 		task.wait(1)
 	end
 end)
