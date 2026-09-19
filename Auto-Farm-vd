@@ -975,6 +975,24 @@ AutoFarmGroup:AddToggle("EnableAutoFarm", {
 	Default = false,
 })
 
+--- Enables or disables custom coordinate teleportation.
+AutoFarmGroup:AddToggle("CustomTeleport", {
+	Text = "Custom Teleport",
+	Tooltip = "Teleport avatar to X: 1963.9, Y: 752.0, Z: 3759.1",
+	Default = false,
+	Callback = function(v)
+		if v then
+			local root = GetRoot()
+			if root then
+				root.CFrame = CFrame.new(1963.9, 752.0, 3759.1)
+				Notify("📍 Custom TP", "Teleported to target coordinates!")
+			else
+				Notify("⚠️ Error", "Character root part not found")
+			end
+		end
+	end,
+})
+
 --- Enables or disables automatic low-population server hopping.
 AutoFarmGroup:AddToggle("ServerHop", {
 	Text = "Server Hop",
