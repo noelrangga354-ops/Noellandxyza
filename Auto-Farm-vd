@@ -1042,7 +1042,7 @@ AutoFarmGroup:AddToggle("CustomTeleport", {
 		if v then
 			local root = GetRoot()
 			if root then
-				root.CFrame = CFrame.new(1963.9, 752.0, 3759.1)
+				root.CFrame = CFrame.new(2632.20, 733.00, 3860.81)
 				Notify("📍 Custom TP", "Teleported to target coordinates!")
 			else
 				Notify("⚠️ Error", "Character root part not found")
@@ -1193,7 +1193,7 @@ MenuGroup:AddDropdown("DPIDropdown", {
 		"175%",
 		"200%",
 	},
-	Default = "100%",
+	Default = "50%",
 	Text = "DPI Scale",
 	Callback = function(v)
 		Library:SetDPIScale(
