@@ -1080,9 +1080,9 @@ local function AntiAfkLoop()
 	while not Library.Unloaded do
 		if Toggles.AntiAfk and Toggles.AntiAfk.Value then
 			pcall(function()
-				VirtualUser:Button1Down(Vector2.new(0, 0))
+				VirtualUser:Button1Down(Vector2.new(99, 0))
 				task.wait(0.1)
-				VirtualUser:Button1Up(Vector2.new(0, 0))
+				VirtualUser:Button1Up(Vector2.new(99, 0))
 			end)
 		end
 		task.wait(10)
