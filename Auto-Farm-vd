@@ -1,11 +1,10 @@
 --- VD Auto Farm & Sheriff Mode
----
 --- Automated survivor farming, low-population server hopping,
 --- webhook reporting, teleport recovery, and invisible/sheriff mode for Violence District.
 ---
 --- @module vd_auto_farm
---- @author Rzor731
---- @version 1.1.0
+--- @author Rzor731 & User Custom
+--- @version 1.1.1
 pcall(function()
 	game:GetService("GuiService"):SetErrorPromptEnabled(false)
 end)
@@ -16,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local VirtualUser = game:GetService("VirtualUser")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
@@ -49,7 +49,7 @@ Library.ShowToggleFrameInKeybinds = true
 --- @local
 local Window = Library:CreateWindow({
 	Title = "",
-	Footer = "version: 1.1.0",
+	Footer = "version: 1.1.1",
 	Icon = "bot",
 	NotifySide = "Right",
 	ShowCustomCursor = true,
@@ -109,16 +109,25 @@ local GriddyAnim = Instance.new("Animation")
 GriddyAnim.AnimationId = "rbxassetid://75586690784894"
 local CurrentGriddyTrack = nil
 
+-- PERSISTENT CACHE VARIABLES (HOME / AUTO FARM TAB INFO)
+local currentMapStr = "Menunggu..."
+local currentKillerStr = "Mencari..."
+local currentGenStr = "0 / 7"
+
+local MapCoords = {
+    ["scp"] = {{-53.2, 284.9, -551.7}},
+    ["club"] = {{1560.1, 153.1, -789.0}},
+    ["firelinkshrine"] = {{-680.4, 133.7, -7879.8}},
+    ["rooftophospital"] = {{3019.2, 455.8, -5410.6}},
+    ["asylum"] = {{-1825.7, 173.8, -3313.4}},
+    ["harbor"] = {{-1364.3, 59.7, -1324.3}},
+    ["re4"] = {{1187.9, -18.1, -186.2}},
+    ["forest"] = {{-212.2, 29.9, -1486.4}},
+}
+
+local currentMapKey = "club"
+
 --- Displays a throttled UI notification.
----
---- Notifications are limited to one every 2.5 seconds
---- to prevent excessive UI spam.
----
---- @param title string Notification title.
---- @param desc string Notification description.
---- @param duration number|nil Display duration in seconds.
---- @return nil
---- @local
 local function Notify(title, desc, duration)
 	local now = os.clock()
 	if now - LastNotifTime < 2.5 then
@@ -133,12 +142,6 @@ local function Notify(title, desc, duration)
 end
 
 --- Returns the current role of the local player.
----
---- Supported roles are `Killer`, `Survivor`, `Spectator`,
---- `Lobby`, and `Unknown`.
----
---- @return string role Current player role.
---- @local
 local function GetRole()
 	local team = LocalPlayer.Team
 	if not team then
@@ -156,49 +159,25 @@ local function GetRole()
 end
 
 --- Returns the local player's HumanoidRootPart.
----
---- @return BasePart|nil root Character root part, if available.
---- @local
 local function GetRoot()
 	local c = LocalPlayer.Character
 	return c and c:FindFirstChild("HumanoidRootPart")
 end
 
 --- Sends an HTTP request using an executor-provided request function.
----
---- Supports several common executor request APIs.
----
---- @param opts table HTTP request options.
---- @return table|nil response HTTP response object, if supported.
---- @local
 local function SafeReq(opts)
 	local fn = (syn and syn.request) or (http and http.request) or http_request or request or (fluxus and fluxus.request) or (krnl and krnl.request)
 	return fn and fn(opts)
 end
 
 --- Returns the current executor name.
----
---- @return string name Detected executor name.
---- @local
 local function ExecutorName()
 	return (identifyexecutor and identifyexecutor()) or (getexecutorname and getexecutorname()) or "Unknown Executor"
 end
 
---- File used to persist previous player attributes.
---- @local
 local ATTR_FILE = "VD_AutoFarm_Attributes.json"
-
---- Previously stored player attributes.
---- @type table|nil
---- @local
 local PrevAttrs
 
---- Loads the previously saved attribute snapshot.
----
---- The snapshot is rejected when it belongs to another Roblox user.
----
---- @return table|nil snapshot Stored attribute values.
---- @local
 local function LoadSnapshot()
 	if not isfile or not readfile or not isfile(ATTR_FILE) then
 		return nil
@@ -217,11 +196,6 @@ local function LoadSnapshot()
 	}
 end
 
---- Saves the current attribute snapshot to disk.
----
---- @param attrs table Attribute snapshot.
---- @return boolean success Whether the write operation succeeded.
---- @local
 local function SaveSnapshot(attrs)
 	if not writefile then
 		return false
@@ -239,12 +213,6 @@ local function SaveSnapshot(attrs)
 	end)
 end
 
---- Calculates the numeric difference between two values.
----
---- @param cur number|string Current value.
---- @param prev number|string|nil Previous value.
---- @return number delta Difference between current and previous values.
---- @local
 local function Delta(cur, prev)
 	cur = tonumber(cur) or 0
 	if prev == nil then
@@ -254,37 +222,18 @@ local function Delta(cur, prev)
 end
 PrevAttrs = LoadSnapshot()
 
---- Determines whether webhook reporting is enabled.
----
---- @return boolean enabled Whether the webhook toggle is enabled.
---- @local
 local function WebhookEnabled()
 	return Toggles.EnableWebhook and Toggles.EnableWebhook.Value
 end
 
---- Returns the configured Discord webhook URL.
----
---- @return string url Configured webhook URL.
---- @local
 local function WebhookUrl()
 	return Options.WebhookLink and Options.WebhookLink.Value or ""
 end
 
---- Validates the configured webhook URL.
----
---- @param url string Webhook URL to validate.
---- @return boolean valid Whether the url appears to be a Discord webhook.
---- @local
 local function ValidWebhook(url)
 	return url ~= "" and string.find(url, "discord.com/api/webhooks")
 end
 
---- Sends a diagnostic message to the configured webhook.
----
---- @param title string Embed title.
---- @param desc string Embed description.
---- @return boolean success Whether the request was accepted.
---- @local
 local function SendDebug(title, desc)
 	if not WebhookEnabled() then
 		return false
@@ -317,14 +266,6 @@ local function SendDebug(title, desc)
 	return res and (res.StatusCode == 200 or res.StatusCode == 204)
 end
 
---- Sends a player-statistic webhook.
----
---- @param title string|nil Optional embed title.
---- @param desc string|nil Embed description.
---- @param force boolean|nil Whether to send even when the webhook toggle is disabled.
---- @return boolean success Whether the webhook request succeeded.
---- @return string status Result description.
---- @local
 local function SendWebhook(title, desc, force)
 	if not force and not WebhookEnabled() then
 		return false, "Disabled"
@@ -409,11 +350,119 @@ local function SendWebhook(title, desc, force)
 	return false, "Status: " .. tostring(res and res.StatusCode or "No Response")
 end
 
---- Searches a map for the survivor finish position.
----
---- @param map Instance Active map instance.
---- @return Vector3|nil position Detected finish position.
---- @local
+--- Fungsi helper untuk mengambil nilai game
+local function GetGameValue(obj, name)
+    if not obj then return nil end
+    local success, val = pcall(function()
+        if obj:GetAttribute(name) ~= nil then return obj:GetAttribute(name) end
+        local stats = obj:FindFirstChild("leaderstats") or obj:FindFirstChild("Data") or obj:FindFirstChild("Stats")
+        if stats and stats:FindFirstChild(name) then return stats:FindFirstChild(name).Value end
+        local child = obj:FindFirstChild(name)
+        if child and child.Value ~= nil then return child.Value end
+        return nil
+    end)
+    if success then return val end
+    return nil
+end
+
+--- Loop utama untuk memperbarui Status Match & Deteksi Killer Saya
+task.spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            local teamName = (LocalPlayer.Team and LocalPlayer.Team.Name:lower()) or ""
+            local isLobby = teamName:find("spectator") or teamName:find("lobby")
+
+            if isLobby then
+                local players = Players:GetPlayers()
+                table.sort(players, function(a, b)
+                    local aA = GetGameValue(a, "AllowKiller") or false
+                    local bA = GetGameValue(b, "AllowKiller") or false
+                    if aA ~= bA then return aA == true end
+                    return (GetGameValue(a, "KillerChance") or 0) > (GetGameValue(b, "KillerChance") or 0)
+                end)
+                local nk = players[1]
+                if nk then
+                    local killerName = tostring(GetGameValue(nk, "SelectedKiller") or "Slasher")
+                    local playerName = nk.Name
+                    local lvlText = "39"
+                    pcall(function()
+                        local lpGui = LocalPlayer:FindFirstChild("PlayerGui")
+                        local lb = lpGui and lpGui:FindFirstChild("Spectator") and lpGui.Spectator:FindFirstChild("Info") and lpGui.Spectator.Info:FindFirstChild("Leaderboard") and lpGui.Spectator.Info.Leaderboard:FindFirstChild("Leaderboard")
+                        if lb then
+                            local pNode = lb:FindFirstChild(nk.Name)
+                            if pNode and pNode:FindFirstChild("Border") and pNode.Border:FindFirstChild("Level") then
+                                lvlText = pNode.Border.Level.Text
+                            end
+                        end
+                    end)
+                    currentKillerStr = string.format("%s | %s | %s", killerName, playerName, lvlText)
+                else
+                    currentKillerStr = "Mencari..."
+                end
+            else
+                local foundKiller = false
+                for _, plr in ipairs(Players:GetPlayers()) do
+                    local isKiller = false
+                    if plr.Team and (plr.Team.Name:lower():find("killer") or plr.Team.Name:lower():find("slayer")) then 
+                        isKiller = true
+                    elseif plr.Character and (plr.Character:FindFirstChild("Killer") or plr.Character:FindFirstChildOfClass("Tool")) then 
+                        isKiller = true 
+                    end
+
+                    if isKiller then
+                        foundKiller = true
+                        local killerName = tostring(GetGameValue(plr, "SelectedKiller") or "Slasher")
+                        local lvlText = "39"
+                        pcall(function()
+                            local lpGui = LocalPlayer:FindFirstChild("PlayerGui")
+                            local lb = lpGui and lpGui:FindFirstChild("Spectator") and lpGui.Spectator:FindFirstChild("Info") and lpGui.Spectator.Info:FindFirstChild("Leaderboard") and lpGui.Spectator.Info.Leaderboard:FindFirstChild("Leaderboard")
+                            if lb then
+                                local pNode = lb:FindFirstChild(plr.Name)
+                                if pNode and pNode:FindFirstChild("Border") and pNode.Border:FindFirstChild("Level") then
+                                    lvlText = pNode.Border.Level.Text
+                                end
+                            end
+                        end)
+                        currentKillerStr = string.format("%s | %s | %s", killerName, plr.Name, lvlText)
+                        break
+                    end
+                end
+                if not foundKiller then currentKillerStr = "Belum Ditentukan" end
+            end
+
+            -- LOGIKA UTAMA: Jika namaku terdeteksi sebagai Killer, langsung paksa pindah server!
+            if currentKillerStr:find(LocalPlayer.Name) then
+                Notify("⚠️ Terdeteksi Killer", "Kamu menjadi Killer! Pindah server...")
+                if Toggles.ServerHop and Toggles.ServerHop.Value then
+                    ForceServerHop = true
+                end
+            end
+        end)
+    end
+end)
+
+--- Remote listener untuk mendeteksi nama map aktif
+pcall(function()
+    local Remotes = ReplicatedStorage:WaitForChild("Remotes", 5)
+    if Remotes then
+        local Messages = Remotes:WaitForChild("Messages", 5)
+        if Messages then
+            local MapInfoError = Messages:WaitForChild("Mapinfo", 5)
+            if MapInfoError then
+                MapInfoError.OnClientEvent:Connect(function(mapName)
+                    if mapName and type(mapName) == "string" then
+                        currentMapStr = string.upper(mapName)
+                        local lowerName = mapName:lower()
+                        for k, _ in pairs(MapCoords) do
+                            if lowerName:find(k) then currentMapKey = k break end
+                        end
+                    end
+                end)
+            end
+        end
+    end
+end)
+
 local function FindFinish(map)
 	local pos
 	pcall(function()
@@ -477,9 +526,6 @@ local function FindFinish(map)
 	return pos
 end
 
---- Completes the current survivor round by teleporting.
---- @return nil
---- @local
 local function BeatGame()
 	if not Toggles.EnableAutoFarm.Value then
 		BeatState.BeatSurvivorDone = false
@@ -661,6 +707,7 @@ TimeEvent.OnClientEvent:Connect(function(s)
 end)
 
 local function CanHop()
+	if ForceServerHop then return true end
 	if not IsRound then
 		return false
 	end
@@ -1020,7 +1067,6 @@ AutoFarmGroup:AddToggle("ServerHop", {
 	end,
 })
 
---- Toggle Sheriff / Invisible Mode inside Obsidian UI
 AutoFarmGroup:AddToggle("SheriffMode", {
 	Text = "Sheriff Mode (Invisible)",
 	Tooltip = "Toggle custom invisible/speedhack mode with LeftControl",
@@ -1029,6 +1075,27 @@ AutoFarmGroup:AddToggle("SheriffMode", {
 		ToggleSheriff(v)
 	end,
 })
+
+local function AntiAfkLoop()
+	while not Library.Unloaded do
+		if Toggles.AntiAfk and Toggles.AntiAfk.Value then
+			pcall(function()
+				VirtualUser:Button1Down(Vector2.new(0, 0))
+				task.wait(0.1)
+				VirtualUser:Button1Up(Vector2.new(0, 0))
+			end)
+		end
+		task.wait(10)
+	end
+end
+
+AutoFarmGroup:AddToggle("AntiAfk", {
+	Text = "Anti AFK",
+	Tooltip = "Mencegah kick karena AFK dengan menggeser layar setiap 10 detik",
+	Default = false,
+})
+
+task.spawn(AntiAfkLoop)
 
 local LOADER_URL = "https://raw.githubusercontent.com/noelrangga354-ops/Noellandxyza/refs/heads/main/Auto-Farm-vd"
 local AutoExecuteQueued = false
